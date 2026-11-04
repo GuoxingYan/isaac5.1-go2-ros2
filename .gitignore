@@ -1,2 +1,5 @@
 __pycache__
 outputs
+# Local InteriorGS assets and reproducible generated RTX profile
+/data/
+/assets/sensors/mid360.usda

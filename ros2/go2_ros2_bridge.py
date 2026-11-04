@@ -5,15 +5,25 @@ import time
 from pathlib import Path
 import numpy as np
 import torch
+from go2.sensor_profile import PROFILE
 from PIL import Image
 
-DATA_DIR = Path(os.environ.get('GO2_DATA_DIR', Path(__file__).resolve().parents[1] / 'outputs/bridge'))
+DATA_DIR = Path(os.environ.get('GO2_DATA_DIR', Path(__file__).resolve().parents[1] / 'outputs/our-go2-bridge'))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 CMD_VEL_FILE = DATA_DIR / 'cmd_vel.json'
 
 class RobotDataManager:
-    def __init__(self, env, lidar_annotators, cameras, cfg):
+    def __init__(self, env, lidar_annotators, cameras, cfg, sensor_manager=None):
         self.env, self.cfg = env, cfg
+        self.sensor_manager=sensor_manager
+        self.imu_history=[]
+        self.imu_cursor=0
+        self.last_imu_time={}
+        self.camera_history=[]
+        self.lidar_history=[]
+        self.previous_sensor_data={}
+        self.last_camera_tick=-1
+        self.last_lidar_tick=-1
         self.lidar_annotators, self.cameras = lidar_annotators, cameras
         self.step_count = 0
         self.last_cmd = 0
@@ -39,15 +49,18 @@ class RobotDataManager:
 
     def pub_ros2_data(self):
         self.step_count += 1
-        if self.step_count % 3:
-            return
         robot = self.env.unwrapped.scene['unitree_go2']
         rs = robot.data.root_state_w.detach().cpu().numpy()
-        d = {'timestamp':time.time(), 'frame':self.step_count//3, 'num_envs':len(rs),
+        d = {'timestamp':time.time(), 'simulation_time':float(self.env.unwrapped.sim.current_time), 'frame':self.step_count, 'num_envs':len(rs),
              'robots':rs.tolist(), 'odom':{'position':rs[0,:3].tolist(),
              'orientation':rs[0,[4,5,6,3]].tolist(), 'frame_id':'odom', 'child_frame_id':'unitree_go2/base_link'}}
-        slot = (self.step_count//3) % 4
-        if self.cameras:
+        d['sensor_profile']=PROFILE
+        sim_time=d['simulation_time']
+        slot = self.step_count % 8
+        d.update(self.previous_sensor_data)
+        camera_tick=int(round(sim_time*1000000)*30//1000000)
+        if self.cameras and camera_tick!=self.last_camera_tick:
+            self.last_camera_tick=camera_tick
             cam = self.cameras[0]
             try:
                 rgb = cam.get_rgb()
@@ -57,6 +70,9 @@ class RobotDataManager:
                     Image.fromarray(rgb.astype(np.uint8)).save(DATA_DIR/name)
                     d['color_image'] = name
                     d['intrinsics'] = cam.get_intrinsics_matrix().tolist()
+                    d['depth_intrinsics'] = cam.get_depth_intrinsics_matrix().tolist()
+                    d['camera_time']=sim_time
+                    self.camera_history.append(sim_time)
                 if depth is not None and depth.size:
                     name = f'depth_{slot}.npy'
                     np.save(DATA_DIR/name, np.asarray(depth,dtype=np.float32))
@@ -80,21 +96,47 @@ class RobotDataManager:
                         d['rgbd_point_cloud']=name
             except Exception as e:
                 self.errors['camera']=str(e)
-        if self.lidar_annotators:
+        lidar_tick=int(round(sim_time*1000000)*10//1000000)
+        if self.lidar_annotators and lidar_tick!=self.last_lidar_tick:
+            self.last_lidar_tick=lidar_tick
             try:
                 pc=self.lidar_annotators[0].get_data()
                 pts=pc.get('data') if isinstance(pc,dict) else pc
                 if isinstance(pts,np.ndarray) and pts.ndim==2 and pts.shape[1]>=3 and len(pts):
                     pts=pts[:,:3].astype(np.float32)
-                    pts=pts[np.isfinite(pts).all(axis=1)]
+                    ranges=np.linalg.norm(pts,axis=1)
+                    valid=np.isfinite(pts).all(axis=1)&(ranges>=.1)&(ranges<=70.)
+                    pts=pts[valid]
                     name=f'lidar_{slot}.npy'
                     np.save(DATA_DIR/name,pts)
                     d['point_cloud']=name
+                    d['lidar_time']=sim_time
+                    self.lidar_history.append(sim_time)
+                    if isinstance(pc,dict):
+                        aux={}
+                        for key in ['intensity','timestamp','distance','azimuth','elevation']:
+                            value=pc.get(key)
+                            if isinstance(value,np.ndarray) and value.size:
+                                aux[key]=value
+                        if aux:
+                            aux_name=f'lidar_aux_{slot}.npz'
+                            np.savez(DATA_DIR/aux_name,**aux)
+                            d['lidar_aux']=aux_name
                     self.errors.pop('lidar_format',None)
                 elif isinstance(pc,dict):
                     self.errors['lidar_format']=str({k:(getattr(v,'shape',type(v).__name__)) for k,v in pc.items()})
             except Exception as e:
                 self.errors['lidar']=str(e)
+        if self.sensor_manager:
+            fresh=[]
+            for sample in self.sensor_manager.imu_samples:
+                index=sample['robot']
+                if sample['time']>self.last_imu_time.get(index,0):
+                    fresh.append(sample)
+                    self.last_imu_time[index]=sample['time']
+            d['imu_samples']=[s for s in self.sensor_manager.imu_samples if s['time']>sim_time-1.0]
+            self.imu_history.extend(fresh)
+        self.previous_sensor_data={k:v for k,v in d.items() if k in ['color_image','intrinsics','depth_intrinsics','camera_time','depth_image','depth_encoding','semantic','semantic_labels','rgbd_point_cloud','point_cloud','lidar_time','lidar_aux']}
         d['errors']=self.errors
         tmp=DATA_DIR/'data.json.tmp'
         tmp.write_text(json.dumps(d))

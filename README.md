@@ -46,3 +46,23 @@ python scripts/build_report.py reports/latest  # 重新生成报告
 运行 ROS 指令验收前，应先启动 bridge 和 probe。`--self-test` 最后会请求 probe 通过真实 ROS2 `/unitree_go2/cmd_vel` 发送 0.5 m/s，测量位移并检查超时停止；它会移动机器人，测试中请勿手动操控键盘。仅 callback 注入模式不代表 GUI 操作系统键盘验收。`GO2_NO_RENDER=1` 适用于同时关闭两种传感器的物理冒烟测试。
 
 已完成的工作站验收覆盖：七种场景（完整仓库实际加载 3470 个 Mesh）、flat/rough 两策略三机器人、三台机器人各自 RGBD/LiDAR、组合键/编号切换/急停。GUI 六方向和 ROS2 端到端测量以最新 HTML/JSON 为准。场景测试为短时冒烟测试，不等于长时间稳定性或任意障碍物上的策略性能保证。默认 ROS2 图像、点云和里程计话题对应机器人 0；共享元数据包含全部机器人状态。
+
+## 我方 Go2 硬件分支
+
+分支 `codex/our-go2-d435-mid360` 与 main 的差别：main 为通用同视场相机和 `Example_Rotary`，没有独立 IMU；本分支使用 `cfg/our_go2_sensors.json` 描述 D435、MID360 及其内置 IMU。
+
+- D435：RGB 640×360、69°水平视场；深度848×480、87°水平视场，0.2–10米，30Hz模拟时间调度。两路内参分别输出，不冒充已配准图像。50mm 双目基线为规格元数据，本模型没有模拟主动双目匹配、投射器或噪声。
+- MID360：本地 RTX OmniLidar 资产，360°水平、−7°到52°垂直、0.1–70米范围、10Hz窗口、200000条计划射线/模拟秒。程序化角序列近似非重复覆盖，**不是 Livox 专有扫描轨迹、驱动/UDP协议或反射率性能复刻**；实际返回点数取决于场景求交。
+- MID360 IMU：Isaac Lab 刚体物理IMU，200Hz，包含重力比力和角速度，使用雷达安装位置，IMU到雷达暂假设单位外参。ROS `/livox/imu` 为 `sensor_msgs/Imu`，姿态不可用标记 `orientation_covariance[0]=-1`，不把仿真真值当硬件融合姿态。
+- 安装位置按用户选择沿用：D435 `(0.4,0,0.2)`，MID360 `(0.2,0,0.2)`（相对base），尚未实机标定。
+- ROS新增 `/livox/lidar`（标准 PointCloud2，非Livox CustomMsg）、`/livox/imu`、`/unitree_go2/front_cam/depth_info`；原话题继续保留。彩色和深度使用不同optical frame。
+
+```bash
+./ros2/start_bridge.sh
+GO2_REPORT_DIR=reports/our-go2 ./ros2/run_probe.sh
+./run_go2.sh --self-test --os-keyboard
+```
+
+本分支共享目录默认为 `outputs/our-go2-bridge`，报告为 `reports/our-go2/report.html`。所有采样率使用模拟时间，不承诺GPU负载下的墙钟实时速度。
+
+规格来源：[D435](https://www.realsenseai.com/products/stereo-depth-camera-d435/)、[D400 datasheet](https://dev.realsenseai.com/download/42003/)、[MID360规格](https://www.livoxtech.com/cn/mid-360/specs)、[Livox SDK2 IMU速率接口](https://github.com/Livox-SDK/Livox-SDK2/blob/master/include/livox_lidar_api.h)。

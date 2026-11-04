@@ -5,17 +5,21 @@ and subscribes to cmd_vel to control the robot.
 Run: /usr/bin/python3 go2_file_bridge_wsl2.py
 """
 import json, time, os, sys
+from pathlib import Path
+PROFILE=json.loads((Path(__file__).resolve().parents[1]/"cfg/our_go2_sensors.json").read_text())
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
+from builtin_interfaces.msg import Time
+from rosgraph_msgs.msg import Clock
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
-from sensor_msgs.msg import Image, PointCloud2, PointField, CameraInfo
+from sensor_msgs.msg import Image, PointCloud2, PointField, CameraInfo, Imu
 from sensor_msgs_py import point_cloud2
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 from PIL import Image as PILImage
 import numpy as np
 
-DATA_DIR = os.environ.get("GO2_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "bridge"))
+DATA_DIR = os.environ.get("GO2_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "our-go2-bridge"))
 CMD_VEL_FILE = os.path.join(DATA_DIR, "cmd_vel.json")
 
 
@@ -30,12 +34,21 @@ class Go2Bridge(Node):
         self.semseg_pub = self.create_publisher(Image, "/unitree_go2/front_cam/semantic_segmentation_image", 1)
         self.lidar_pub = self.create_publisher(PointCloud2, "/unitree_go2/lidar/point_cloud", 1)
         self.cam_info_pub = self.create_publisher(CameraInfo, "/unitree_go2/front_cam/info", 10)
+        self.depth_info_pub = self.create_publisher(CameraInfo, "/unitree_go2/front_cam/depth_info", 10)
+        self.clock_pub = self.create_publisher(Clock, "/clock", 10)
+        self.imu_pub = self.create_publisher(Imu, "/livox/imu", 200)
+        self.livox_pub = self.create_publisher(PointCloud2, "/livox/lidar", 1)
+        self.last_imu_stamp=0.
+        self.last_camera_time=None
+        self.last_lidar_time=None
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_tf = StaticTransformBroadcaster(self)
         transforms=[]
         for child, xyz, quat in [
-            ("unitree_go2/lidar", [0.2,0.,0.2], [0.,0.,0.,1.]),
-            ("unitree_go2/front_cam", [0.4,0.,0.2], [-0.5,0.5,-0.5,0.5])]:
+            ("unitree_go2/lidar", PROFILE["lidar"]["position"], [0.,0.,0.,1.]),
+            ("unitree_go2/front_cam", PROFILE["camera"]["position"], [-0.5,0.5,-0.5,0.5]),
+            ("unitree_go2/d435_depth_optical", PROFILE["camera"]["position"], [-0.5,0.5,-0.5,0.5]),
+            ("unitree_go2/mid360_imu", (np.array(PROFILE["lidar"]["position"])+np.array(PROFILE["imu"]["position_in_lidar"])).tolist(), [0.,0.,0.,1.])]:
             t=TransformStamped()
             t.header.stamp=self.get_clock().now().to_msg()
             t.header.frame_id="unitree_go2/base_link"
@@ -102,11 +115,17 @@ class Go2Bridge(Node):
             return
 
         frame = data.get("frame", 0)
+        if frame < self.last_frame:
+            self.last_imu_stamp=0.
+            self.last_camera_time=None
+            self.last_lidar_time=None
         if frame == self.last_frame:
             return
         self.last_frame = frame
 
-        now = self.get_clock().now().to_msg()
+        sim_stamp=float(data.get('simulation_time',0.))
+        now = Time(sec=int(sim_stamp),nanosec=int((sim_stamp%1)*1e9))
+        self.clock_pub.publish(Clock(clock=now))
         odom_data = data.get("odom", {})
         pos = odom_data.get("position", [0, 0, 0])
         ori = odom_data.get("orientation", [0, 0, 0, 1])
@@ -146,7 +165,10 @@ class Go2Bridge(Node):
         self.pose_pub.publish(pose)
 
         # --- Camera Image ---
-        img_name = data.get("color_image")
+        camera_fresh=data.get("camera_time") != self.last_camera_time
+        if camera_fresh:
+            self.last_camera_time=data.get("camera_time")
+        img_name = data.get("color_image") if camera_fresh else None
         if img_name:
             img_path = os.path.join(DATA_DIR, img_name)
             if os.path.exists(img_path):
@@ -154,7 +176,8 @@ class Go2Bridge(Node):
                     cv_img = np.asarray(PILImage.open(img_path).convert("RGB"))
                     if cv_img is not None:
                         ros_img = self.bridge.cv2_to_imgmsg(cv_img, "rgb8")
-                        ros_img.header.stamp = now
+                        camera_stamp=float(data.get('camera_time',sim_stamp))
+                        ros_img.header.stamp = Time(sec=int(camera_stamp),nanosec=int((camera_stamp%1)*1e9))
                         ros_img.header.frame_id = "unitree_go2/front_cam"
                         self.img_pub.publish(ros_img)
 
@@ -175,7 +198,7 @@ class Go2Bridge(Node):
                     self.get_logger().warn(f"Camera error: {e}")
 
         # --- Depth Image ---
-        depth_name = data.get("depth_image")
+        depth_name = data.get("depth_image") if camera_fresh else None
         if depth_name:
             depth_path = os.path.join(DATA_DIR, depth_name)
             if os.path.exists(depth_path):
@@ -183,14 +206,23 @@ class Go2Bridge(Node):
                     depth_cv = np.load(depth_path)
                     if depth_cv is not None:
                         ros_depth = self.bridge.cv2_to_imgmsg(depth_cv, "32FC1")
-                        ros_depth.header.stamp = now
-                        ros_depth.header.frame_id = "unitree_go2/front_cam"
+                        camera_stamp=float(data.get('camera_time',sim_stamp))
+                        ros_depth.header.stamp = Time(sec=int(camera_stamp),nanosec=int((camera_stamp%1)*1e9))
+                        ros_depth.header.frame_id = "unitree_go2/d435_depth_optical"
+                        info = CameraInfo()
+                        info.header=ros_depth.header
+                        info.height,info.width=depth_cv.shape
+                        k=np.asarray(data['depth_intrinsics'],dtype=float)
+                        info.k=k.ravel().tolist()
+                        info.r=np.eye(3).ravel().tolist()
+                        info.p=np.column_stack([k,np.zeros(3)]).ravel().tolist()
+                        self.depth_info_pub.publish(info)
                         self.depth_pub.publish(ros_depth)
                 except Exception as e:
                     self.get_logger().warn(f"Depth error: {e}")
 
         # --- Semantic Segmentation ---
-        sem_name = data.get("semantic")
+        sem_name = data.get("semantic") if camera_fresh else None
         if sem_name:
             sem_path = os.path.join(DATA_DIR, sem_name)
             if os.path.exists(sem_path):
@@ -198,14 +230,17 @@ class Go2Bridge(Node):
                     sem_cv = np.load(sem_path).astype(np.int32)
                     if sem_cv is not None:
                         ros_sem = self.bridge.cv2_to_imgmsg(sem_cv, "32SC1")
-                        ros_sem.header.stamp = now
-                        ros_sem.header.frame_id = "unitree_go2/front_cam"
+                        ros_sem.header.stamp = ros_depth.header.stamp
+                        ros_sem.header.frame_id = "unitree_go2/d435_depth_optical"
                         self.semseg_pub.publish(ros_sem)
                 except Exception as e:
                     self.get_logger().warn(f"Semantic error: {e}")
 
         # --- LiDAR Point Cloud ---
-        pc_name = data.get("point_cloud")
+        lidar_fresh=data.get("lidar_time") != self.last_lidar_time
+        if lidar_fresh:
+            self.last_lidar_time=data.get("lidar_time")
+        pc_name = data.get("point_cloud") if lidar_fresh else None
         if pc_name:
             pc_path = os.path.join(DATA_DIR, pc_name)
             if os.path.exists(pc_path):
@@ -218,11 +253,27 @@ class Go2Bridge(Node):
                             PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
                         ]
                         from std_msgs.msg import Header
-                        header = Header(stamp=now, frame_id="unitree_go2/lidar")
+                        lidar_stamp=float(data.get('lidar_time',sim_stamp))
+                        header = Header(stamp=Time(sec=int(lidar_stamp),nanosec=int((lidar_stamp%1)*1e9)), frame_id="unitree_go2/lidar")
                         pc2 = point_cloud2.create_cloud(header, fields, pts[:, :3])
                         self.lidar_pub.publish(pc2)
+                        self.livox_pub.publish(pc2)
                 except Exception as e:
                     self.get_logger().warn(f"Lidar error: {e}")
+
+        # 每个 5ms 物理采样只发布一次；不虚构姿态或硬件标定协方差。
+        for sample in data.get('imu_samples',[]):
+            if sample['robot'] != 0 or sample['time'] <= self.last_imu_stamp:
+                continue
+            self.last_imu_stamp=sample['time']
+            msg=Imu()
+            msg.header.frame_id='unitree_go2/mid360_imu'
+            msg.header.stamp.sec=int(sample['time'])
+            msg.header.stamp.nanosec=int((sample['time']%1)*1e9)
+            msg.orientation_covariance[0]=-1.
+            msg.angular_velocity.x,msg.angular_velocity.y,msg.angular_velocity.z=sample['angular_velocity']
+            msg.linear_acceleration.x,msg.linear_acceleration.y,msg.linear_acceleration.z=sample['linear_acceleration']
+            self.imu_pub.publish(msg)
 
 
 def main():

@@ -10,6 +10,8 @@ env_name: obstacle-sparse
 sensor:
   enable_lidar: True
   enable_camera: True
+  enable_imu: True
+  profile: our-go2-d435-mid360
   color_image: True
   depth_image: True
   semantic_segmentation: True

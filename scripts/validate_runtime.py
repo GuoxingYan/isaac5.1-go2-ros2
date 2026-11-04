@@ -18,6 +18,7 @@ class RuntimeValidator:
         self.output.mkdir(parents=True, exist_ok=True)
         self.results=[]
         self.trajectory=[]
+        self.imu_references=[]
         self.finished=False
         self.keys=['W','S','A','D','Z','C']
         self.start=None
@@ -94,6 +95,10 @@ class RuntimeValidator:
             self.viewport_capture = capture_viewport_to_file(get_active_viewport(), str(self.output/'simulation_view.png'))
         state=self.state()
         self.trajectory.append([step,*state.tolist()])
+        if self.dm.sensor_manager and self.dm.sensor_manager.imus:
+            actual=self.dm.sensor_manager.imu.data.ang_vel_b[0].detach().cpu().numpy()
+            expected=Rotation.from_quat(state[[4,5,6,3]]).inv().apply(state[10:13])
+            self.imu_references.append([*actual.tolist(),*expected.tolist()])
         d=self.dm.latest
         if step>=60 and d.get('color_image') and d.get('depth_image'):
             candidate=np.load(DATA_DIR/d['depth_image'])
@@ -133,6 +138,9 @@ class RuntimeValidator:
                     passed=bool(valid.size>100 and np.ptp(valid)>.1)
                     detail.update(valid_pixels=int(valid.size),unit='metres',source='RTX distance_to_image_plane')
             self.results.append({'name':key,'pass':passed,**detail})
+        if self.dm.sensor_manager:
+            from scripts.validate_hardware import validate
+            self.results.extend(validate(self))
         topics=self.output/'ros_topics.json'
         if topics.exists():
             evidence=json.loads(topics.read_text())
@@ -141,7 +149,7 @@ class RuntimeValidator:
         if self.test_keyboard:
             self.results.append({'name':'keyboard event delivery', 'pass':bool(len(ctrl.keyboard_events)>10), 'events':len(ctrl.keyboard_events), 'event_tail':list(ctrl.keyboard_events)[-20:], 'method':'X11 XTest' if self.keyboard else 'callback injection'})
         result={'results':self.results,'snapshots':self.snapshots,'elapsed_s':time.time()-self.started,
-                'trajectory':self.trajectory,'sensor_errors':self.dm.errors}
+                'trajectory':self.trajectory,'sensor_errors':self.dm.errors, 'sensor_profile':self.dm.latest.get('sensor_profile')}
         (self.output/'results.json').write_text(json.dumps(result,indent=2))
         from scripts.build_report import build
         build(self.output)

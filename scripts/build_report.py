@@ -38,12 +38,23 @@ def build(directory):
         fig.tight_layout();fig.savefig(out,dpi=120);plt.close(fig)
         plots.append((title,out))
     if 'color_image' in d['snapshots']:
-        plots.insert(0,('Robot front RGB · 640 × 480',directory/d['snapshots']['color_image']))
+        plots.insert(0,('D435 RGB · separate color optical frame',directory/d['snapshots']['color_image']))
     if (directory/'simulation_view.png').exists():
         plots.insert(0,('Go2 simulation viewport',directory/'simulation_view.png'))
     multi=directory.parent/'scenes'/'multi-sensors'/'simulation_view.png'
-    if multi.exists():
+    if multi.exists() and not d.get("sensor_profile"):
         plots.append(('Three Go2 robots · RGBD + RTX LiDAR verified on all robots',multi))
+    if (directory/'imu.npy').exists():
+        imu=np.load(directory/'imu.npy')
+        fig,axes=plt.subplots(2,1,figsize=(10,6),sharex=True)
+        for i,label in enumerate(['X','Y','Z']):
+            axes[0].plot(imu[:,0],imu[:,i+1],label=label,linewidth=.5)
+            axes[1].plot(imu[:,0],imu[:,i+4],label=label,linewidth=.5)
+        axes[0].set(ylabel='specific force (m/s²)',title='MID360 integrated IMU · physics samples, simulated time')
+        axes[1].set(xlabel='simulation time (s)',ylabel='gyro (rad/s)')
+        for ax in axes: ax.legend();ax.grid(alpha=.2)
+        out=directory/'imu.png';fig.tight_layout();fig.savefig(out,dpi=120);plt.close(fig)
+        plots.append(('MID360 IMU · gravity + motion response',out))
     trajectory=np.asarray(d['trajectory'])
     fig,ax=plt.subplots(figsize=(9,5));ax.plot(trajectory[:,1],trajectory[:,2]);ax.set(xlabel='World X (m)',ylabel='World Y (m)',title='Measured Go2 trajectory');ax.axis('equal');ax.grid(alpha=.3)
     out=directory/'trajectory.png';fig.savefig(out,dpi=120);plt.close(fig);plots.append(('Measured trajectory',out))
@@ -52,6 +63,8 @@ def build(directory):
     scene_rows=''
     scene_pass=0
     expected=['obstacle-sparse','obstacle-medium','obstacle-dense','warehouse','warehouse-forklifts','warehouse-shelves','full-warehouse','multi-flat','multi-rough','multi-sensors']
+    if d.get('sensor_profile'):
+        expected=[]
     for name in expected:
         path=directory.parent/'scenes'/name/'smoke.json'
         if not path.exists():
@@ -66,7 +79,12 @@ def build(directory):
     sim_seconds=max(0,len(d['trajectory'])-1)*.02
     average_rtf=sim_seconds/max(d['elapsed_s'],.001)
     count=sum(r['pass'] for r in d['results'])
-    page=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Go2 Ubuntu 22.04 验证报告</title><style>body{{font:16px system-ui;background:#101827;color:#e2e8f0;margin:40px auto;max-width:1400px;padding:20px}}h1{{font-size:36px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:24px}}figure{{margin:0;background:#1e293b;padding:16px;border-radius:12px}}img{{width:100%;border-radius:8px}}figcaption{{padding:12px}}table{{width:100%;border-collapse:collapse}}td,th{{padding:12px;text-align:left;border-bottom:1px solid #334155}}pre{{white-space:pre-wrap;word-break:break-word;max-width:800px}}.pass{{color:#4ade80}}.fail{{color:#fb7185}}</style><h1>Go2 · Ubuntu 22.04 工作站仿真验证</h1><p>Isaac Sim 5.1 · conda isaacsim_510 · RTX 3090 · {count}/{len(d['results'])} checks passed · {d['elapsed_s']:.1f}s wall time · average RTF {average_rtf:.2f}</p><p>图像与点云均来自本次实际 RTX 传感器采集。键盘 callback 注入和 OS 窗口键盘输入分别验收；未执行项目不视为通过。</p><div class="grid">{cards}</div><h2>验收记录</h2><table><tr><th>功能</th><th>结果</th><th>证据</th></tr>{rows}</table><h2>场景与多机器人验收 · {scene_pass}/{len(expected)}</h2><table>{scene_rows}</table><h2>运行环境</h2><pre>{environment}</pre><h2>传感器诊断</h2><pre>{html.escape(json.dumps(d['sensor_errors'],ensure_ascii=False,indent=2))}</pre></html>'''
+    hardware=''
+    if d.get('sensor_profile'):
+        profile=d['sensor_profile']
+        hardware='<h2>Our Go2 · D435 / MID360 / MID360 IMU</h2><p>外参沿用原安装位置，尚未实机标定。D435 是独立彩色/深度视场的理想几何模型；MID360 使用 RTX 真实场景求交和程序化扫描覆盖近似，非厂商专有扫描轨迹；IMU 为同位置物理采样，无硬件噪声标定，不发布虚构姿态。主分支使用通用相机与 Example_Rotary，未配置独立 IMU。</p><pre>'+html.escape(json.dumps(profile,ensure_ascii=False,indent=2))+'</pre>'
+    scene_section=f'<h2>场景与多机器人验收 · {scene_pass}/{len(expected)}</h2><table>{scene_rows}</table>' if expected else ''
+    page=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Go2 Ubuntu 22.04 验证报告</title><style>body{{font:16px system-ui;background:#101827;color:#e2e8f0;margin:40px auto;max-width:1400px;padding:20px}}h1{{font-size:36px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:24px}}figure{{margin:0;background:#1e293b;padding:16px;border-radius:12px}}img{{width:100%;border-radius:8px}}figcaption{{padding:12px}}table{{width:100%;border-collapse:collapse}}td,th{{padding:12px;text-align:left;border-bottom:1px solid #334155}}pre{{white-space:pre-wrap;word-break:break-word;max-width:800px}}.pass{{color:#4ade80}}.fail{{color:#fb7185}}</style><h1>Go2 · Ubuntu 22.04 工作站仿真验证</h1><p>Isaac Sim 5.1 · conda isaacsim_510 · RTX 3090 · {count}/{len(d['results'])} checks passed · {d['elapsed_s']:.1f}s wall time · average RTF {average_rtf:.2f}</p><p>图像与点云均来自本次实际 RTX 传感器采集。键盘 callback 注入和 OS 窗口键盘输入分别验收；未执行项目不视为通过。</p><div class="grid">{cards}</div>{hardware}<h2>验收记录</h2><table><tr><th>功能</th><th>结果</th><th>证据</th></tr>{rows}</table>{scene_section}<h2>运行环境</h2><pre>{environment}</pre><h2>传感器诊断</h2><pre>{html.escape(json.dumps(d['sensor_errors'],ensure_ascii=False,indent=2))}</pre></html>'''
     (directory/'report.html').write_text(page, encoding='utf-8')
     print('REPORT:',directory/'report.html',flush=True)
 

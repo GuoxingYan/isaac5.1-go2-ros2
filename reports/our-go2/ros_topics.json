@@ -1,0 +1,65 @@
+{
+  "counts": {
+    "rgb": 357,
+    "depth": 357,
+    "semantic": 355,
+    "lidar": 226,
+    "odom": 363,
+    "info": 357,
+    "tf": 363,
+    "imu": 1024,
+    "depth_info": 357,
+    "livox": 226
+  },
+  "details": {
+    "odom": {
+      "position": [
+        0.3493554890155792,
+        0.2764526903629303,
+        0.41784369945526123
+      ]
+    },
+    "rgb": {
+      "encoding": "rgb8",
+      "width": 640,
+      "height": 360,
+      "bytes": 691200
+    },
+    "depth": {
+      "encoding": "32FC1",
+      "width": 848,
+      "height": 480,
+      "bytes": 1628160
+    },
+    "semantic": {
+      "encoding": "32SC1",
+      "width": 848,
+      "height": 480,
+      "bytes": 1628160
+    },
+    "lidar": {
+      "points": 615,
+      "frame": "unitree_go2/lidar"
+    },
+    "livox": {
+      "points": 615,
+      "frame": "unitree_go2/lidar"
+    },
+    "imu": {
+      "frame": "unitree_go2/mid360_imu",
+      "time": 23.029999485,
+      "acceleration": [
+        -0.08208386600017548,
+        -0.8175401091575623,
+        9.694713592529297
+      ],
+      "gyro": [
+        -0.031637173146009445,
+        -0.08250986039638519,
+        0.03702874109148979
+      ],
+      "orientation_unavailable": true
+    }
+  },
+  "elapsed_s": 509.0005426839998
+}

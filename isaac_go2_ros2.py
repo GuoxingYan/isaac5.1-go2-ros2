@@ -21,7 +21,7 @@ parser.add_argument("--self-test", action="store_true")
 parser.add_argument("--os-keyboard", action="store_true")
 parser.add_argument("--cmd-test", action="store_true")
 parser.add_argument("--max-steps", type=int, default=0)
-parser.add_argument("--report-dir", default="reports/latest")
+parser.add_argument("--report-dir", default="reports/our-go2")
 parser.add_argument("--policy", choices=["rough", "flat"], default="rough")
 
 # append AppLauncher cli args
@@ -61,6 +61,8 @@ def run_simulator(cfg):
     go2_env_cfg.sim.render_interval = go2_env_cfg.decimation
     # Set simulation device based on --device arg
     go2_env_cfg.sim.device = getattr(args_cli, "device", "cuda:0")
+    if not cfg.sensor.enable_imu:
+        go2_env_cfg.scene.mid360_imu=None
     go2_ctrl.init_base_vel_cmd(cfg.num_envs)
     env, policy = (go2_ctrl.get_rsl_flat_policy if args_cli.policy == "flat" else go2_ctrl.get_rsl_rough_policy)(go2_env_cfg)
 
@@ -81,9 +83,11 @@ def run_simulator(cfg):
         sim_env.create_full_warehouse_env() # full warehouse
 
     # Sensor setup
-    sm = go2_sensors.SensorManager(cfg.num_envs) if (cfg.sensor.enable_lidar or cfg.sensor.enable_camera) else None
+    sm = go2_sensors.SensorManager(cfg.num_envs, cfg.sensor.enable_lidar or cfg.sensor.enable_camera) if (cfg.sensor.enable_lidar or cfg.sensor.enable_camera or cfg.sensor.enable_imu) else None
     lidar_annotators = sm.add_rtx_lidar() if cfg.sensor.enable_lidar else []
     cameras = sm.add_camera(cfg.freq) if cfg.sensor.enable_camera else []
+    if cfg.sensor.enable_imu:
+        sm.add_imu(env)
 
     # Keyboard control
     keyboard_subscription = None
@@ -95,7 +99,7 @@ def run_simulator(cfg):
     # ROS2 Bridge (optional)
     if ROS2_AVAILABLE:
         try:
-            dm = go2_ros2_bridge.RobotDataManager(env, lidar_annotators, cameras, cfg)
+            dm = go2_ros2_bridge.RobotDataManager(env, lidar_annotators, cameras, cfg, sm)
         except Exception as e:
             print(f"[WARN] ROS2 bridge init failed: {e}")
             dm = None
@@ -122,6 +126,8 @@ def run_simulator(cfg):
 
         start_time = time.time()
         with torch.inference_mode():
+            if sm:
+                sm.update_scan(step)
             # control joints
             actions = policy(obs)
 
@@ -189,6 +195,10 @@ def run_simulator(cfg):
                 pts = pc.get("data") if isinstance(pc,dict) else pc
                 sensor_checks.append({"name":f"robot {i} RTX LiDAR", "pass":bool(pts is not None and pts.size)})
             sensor_checks.append({"name":"all LiDARs created", "pass":len(lidar_annotators)==cfg.num_envs})
+        if cfg.sensor.enable_imu:
+            times=np.array([s['time'] for s in dm.imu_history if s['robot']==0])
+            rate=(len(times)-1)/(times[-1]-times[0]) if len(times)>1 else 0
+            sensor_checks.append({"name":"MID360 IMU 200Hz samples", "pass":bool(len(times)>100 and abs(rate-200)<1), "samples":len(times), "simulation_hz":float(rate)})
         checks.extend(sensor_checks)
         meshes = 0
         warehouse = omni.usd.get_context().get_stage().GetPrimAtPath("/World/Warehouse")

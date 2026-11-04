@@ -1,0 +1,241 @@
+{
+  "timestamp": 1793789885.6221156,
+  "simulation_time": 23.029999485239387,
+  "frame": 1151,
+  "num_envs": 1,
+  "robots": [
+    [
+      0.3493554890155792,
+      0.2764526903629303,
+      0.41784369945526123,
+      0.9980785846710205,
+      -0.04538495093584061,
+      0.023329831659793854,
+      -0.03514214977622032,
+      -0.030249806120991707,
+      0.021524572744965553,
+      -0.0018938692519441247,
+      -0.03529532626271248,
+      -0.07638591527938843,
+      0.04581863060593605
+    ]
+  ],
+  "odom": {
+    "position": [
+      0.3493554890155792,
+      0.2764526903629303,
+      0.41784369945526123
+    ],
+    "orientation": [
+      -0.04538495093584061,
+      0.023329831659793854,
+      -0.03514214977622032,
+      0.9980785846710205
+    ],
+    "frame_id": "odom",
+    "child_frame_id": "unitree_go2/base_link"
+  },
+  "sensor_profile": {
+    "profile": "our-go2-d435-mid360",
+    "extrinsics_status": "Existing mount positions retained by user request; not hardware-calibrated",
+    "camera": {
+      "model": "RealSense D435",
+      "position": [
+        0.4,
+        0.0,
+        0.2
+      ],
+      "rpy_deg": [
+        0,
+        0,
+        0
+      ],
+      "rgb_resolution": [
+        640,
+        360
+      ],
+      "depth_resolution": [
+        848,
+        480
+      ],
+      "rgb_hfov_deg": 69.0,
+      "depth_hfov_deg": 87.0,
+      "fps": 30,
+      "depth_min_m": 0.2,
+      "depth_max_m": 10.0,
+      "stereo_baseline_m": 0.05,
+      "model_limit": "Ideal pinhole + RTX geometric depth; no active-stereo matching, emitter, multipath or calibrated noise"
+    },
+    "lidar": {
+      "model": "Livox MID360",
+      "position": [
+        0.2,
+        0.0,
+        0.2
+      ],
+      "rpy_deg": [
+        0,
+        0,
+        0
+      ],
+      "azimuth_deg": [
+        -180,
+        180
+      ],
+      "elevation_deg": [
+        -7,
+        52
+      ],
+      "min_range_m": 0.1,
+      "max_range_m": 70.0,
+      "scan_hz": 10,
+      "points_per_second": 200000,
+      "model_limit": "Procedural nonrepeating angular coverage approximation, not the proprietary Livox scan trajectory; idealized reflectivity-independent 70m cap"
+    },
+    "imu": {
+      "model": "MID360 integrated ICM40609",
+      "position_in_lidar": [
+        0,
+        0,
+        0
+      ],
+      "rotation_wxyz_in_lidar": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "hz": 200,
+      "gravity_m_s2": 9.81,
+      "model_limit": "Physics sensor, ideal noise-free gyro and specific force; IMU-to-LiDAR transform assumed identity, orientation unavailable on ROS"
+    },
+    "sources": [
+      "https://www.livoxtech.com/cn/mid-360/specs",
+      "https://github.com/Livox-SDK/Livox-SDK2/blob/master/include/livox_lidar_api.h",
+      "https://www.realsenseai.com/products/stereo-depth-camera-d435/",
+      "https://dev.realsenseai.com/download/42003/"
+    ]
+  },
+  "color_image": "color_6.png",
+  "intrinsics": [
+    [
+      465.6029052734375,
+      0.0,
+      320.0
+    ],
+    [
+      0.0,
+      465.6028747558594,
+      180.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "depth_intrinsics": [
+    [
+      446.80279541015625,
+      0.0,
+      424.0
+    ],
+    [
+      0.0,
+      446.80279541015625,
+      240.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "camera_time": 23.00999948568642,
+  "depth_image": "depth_6.npy",
+  "depth_encoding": "32FC1",
+  "rgbd_point_cloud": "rgbd_points_6.npy",
+  "point_cloud": "lidar_6.npy",
+  "lidar_time": 23.00999948568642,
+  "lidar_aux": "lidar_aux_6.npz",
+  "semantic": "semantic_6.npy",
+  "semantic_labels": {
+    "idToLabels": {
+      "0": {
+        "class": "BACKGROUND"
+      },
+      "1": {
+        "class": "UNLABELLED"
+      },
+      "2": {
+        "class": "floor"
+      },
+      "3": {
+        "class": "obstacle"
+      }
+    }
+  },
+  "imu_samples": [
+    {
+      "robot": 0,
+      "time": 23.014999485574663,
+      "linear_acceleration": [
+        -0.8718506693840027,
+        -0.3751663863658905,
+        10.031783103942871
+      ],
+      "angular_velocity": [
+        -0.06407665461301804,
+        -0.10726239532232285,
+        0.035100601613521576
+      ],
+      "frame_id": "unitree_go2/mid360_imu"
+    },
+    {
+      "robot": 0,
+      "time": 23.019999485462904,
+      "linear_acceleration": [
+        -0.612754225730896,
+        -0.7055478692054749,
+        9.879873275756836
+      ],
+      "angular_velocity": [
+        -0.069752536714077,
+        -0.11206159740686417,
+        0.03490399196743965
+      ],
+      "frame_id": "unitree_go2/mid360_imu"
+    },
+    {
+      "robot": 0,
+      "time": 23.024999485351145,
+      "linear_acceleration": [
+        0.39617905020713806,
+        -2.517568588256836,
+        9.526233673095703
+      ],
+      "angular_velocity": [
+        -0.029035279527306557,
+        -0.09090164303779602,
+        0.0363687165081501
+      ],
+      "frame_id": "unitree_go2/mid360_imu"
+    },
+    {
+      "robot": 0,
+      "time": 23.029999485239387,
+      "linear_acceleration": [
+        -0.08208386600017548,
+        -0.8175401091575623,
+        9.694713592529297
+      ],
+      "angular_velocity": [
+        -0.031637173146009445,
+        -0.08250986039638519,
+        0.03702874109148979
+      ],
+      "frame_id": "unitree_go2/mid360_imu"
+    }
+  ],
+  "errors": {}
+}

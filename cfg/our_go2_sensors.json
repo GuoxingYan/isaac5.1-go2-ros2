@@ -1,0 +1,8 @@
+{
+  "profile": "our-go2-d435-mid360",
+  "extrinsics_status": "Existing mount positions retained by user request; not hardware-calibrated",
+  "camera": {"model": "RealSense D435", "position": [0.4, 0.0, 0.2], "rpy_deg": [0,0,0], "rgb_resolution": [640,360], "depth_resolution": [848,480], "rgb_hfov_deg": 69.0, "depth_hfov_deg": 87.0, "fps": 30, "depth_min_m": 0.2, "depth_max_m": 10.0, "stereo_baseline_m": 0.05, "model_limit": "Ideal pinhole + RTX geometric depth; no active-stereo matching, emitter, multipath or calibrated noise"},
+  "lidar": {"model": "Livox MID360", "position": [0.2,0.0,0.2], "rpy_deg": [0,0,0], "azimuth_deg": [-180,180], "elevation_deg": [-7,52], "min_range_m": 0.1, "max_range_m": 70.0, "scan_hz": 10, "points_per_second": 200000, "model_limit": "Procedural nonrepeating angular coverage approximation, not the proprietary Livox scan trajectory; idealized reflectivity-independent 70m cap"},
+  "imu": {"model": "MID360 integrated ICM40609", "position_in_lidar": [0,0,0], "rotation_wxyz_in_lidar": [1,0,0,0], "hz": 200, "gravity_m_s2": 9.81, "model_limit": "Physics sensor, ideal noise-free gyro and specific force; IMU-to-LiDAR transform assumed identity, orientation unavailable on ROS"},
+  "sources": ["https://www.livoxtech.com/cn/mid-360/specs", "https://github.com/Livox-SDK/Livox-SDK2/blob/master/include/livox_lidar_api.h", "https://www.realsenseai.com/products/stereo-depth-camera-d435/", "https://dev.realsenseai.com/download/42003/"]
+}
