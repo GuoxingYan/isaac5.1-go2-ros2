@@ -1,10 +1,10 @@
 defaults:
   - _self_
 
-num_envs: 5
-freq: 40 # can only be divisible by 200
-camera_follow: True
-env_name: full-warehouse
+num_envs: 1
+freq: 50 # can only be divisible by 200
+camera_follow: False
+env_name: obstacle-sparse
 # env_name: warehouse
 
 sensor:

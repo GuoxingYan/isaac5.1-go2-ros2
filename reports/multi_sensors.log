@@ -1,0 +1,537 @@
+[INFO][AppLauncher]: Using device: cuda:0
+[INFO][AppLauncher]: Loading experience file: /data/apps/IsaacLab-2.3.0-go2-opencode/apps/isaaclab.python.rendering.kit
+Loading user config located at: '/data/anaconda3/envs/isaacsim_510/lib/python3.11/site-packages/isaacsim/kit/data/Kit/Isaac-Sim/5.1/user.config.json'
+[Info] [carb] Logging to file: /data/anaconda3/envs/isaacsim_510/lib/python3.11/site-packages/isaacsim/kit/logs/Kit/Isaac-Sim/5.1/kit_20261104_180318.log
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.196.07    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA GeForce RTX 3090          | Yes: 0 |     | 24822   MB | 10de      | 0          |
+|     |                                  |        |     |            | 2204      | ac50bad9.. |
+|     |                                  |        |     |            | 21        |            |
+|=============================================================================================|
+| OS: 22.04.5 LTS (Jammy Jellyfish) ubuntu, Version: 22.04.5, Kernel: 6.8.0-138-generic
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101004 (1.21.1.4)
+| Processor: Intel(R) Xeon(R) Gold 6134 CPU @ 3.20GHz
+| Cores: 8 | Logical Cores: 16
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 47876 | Free Memory: 29856
+| Total Page/Swap (MB): 2047 | Free Page/Swap: 1185
+|---------------------------------------------------------------------------------------------|
+2026-11-04T10:03:21Z [3,572ms] [Warning] [gpu.foundation.plugin] CPU performance profile is set to powersave. This profile sets the CPU to the lowest frequency reducing performance.
+2026-11-04T10:03:24Z [6,082ms] [Warning] [omni.log] Source: omni.hydra was already registered.
+2026-11-04T10:03:25Z [7,216ms] [Warning] [carb] Acquiring non optional plugin interface which is not listed as dependency: [omni::physx::IPhysxBenchmarks v1.0] (plugin: <default plugin>), by client: omni.physics.physx.plugin. Add it to CARB_PLUGIN_IMPL_DEPS() macro of a client.
+2026-11-04T10:03:25Z [7,559ms] [Warning] [omni.isaac.dynamic_control] omni.isaac.dynamic_control is deprecated as of Isaac Sim 4.5. No action is needed from end-users.
+2026-11-04T10:03:33Z [14,862ms] [Warning] [pxr.Semantics] pxr.Semantics is deprecated - please use Semantics instead
+2026-11-04T10:03:34Z [15,909ms] [Warning] [omni.graph.core.plugin] Found duplicate of category 'Replicator' - was 'Annotators', adding 'Fabric Reader'
+2026-11-04T10:03:34Z [15,909ms] [Warning] [omni.graph.core.plugin] Category 'Replicator' not accepted on node type 'omni.replicator.core.FabricReader' in extension 'omni.replicator.core'
+2026-11-04T10:03:34Z [15,910ms] [Warning] [omni.replicator.core.scripts.extension] No material configuration file, adding configuration to material settings directly.
+2026-11-04T10:03:46Z [27,872ms] [Warning] [omni.fabric.plugin] Warning: attribute viewportHandle not found for bucket id 9
+
+2026-11-04T10:03:46Z [27,941ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-11-04T10:03:46Z [27,941ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-11-04T10:03:46Z [27,941ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-11-04T10:03:51Z [33,086ms] [Warning] [isaaclab.envs.manager_based_env] Seed not set for the environment. The environment creation may not be deterministic.
+2026-11-04T10:03:51Z [33,086ms] [Warning] [isaaclab.sim.simulation_context] The `disable_contact_processing` attribute is deprecated and always set to True to avoid unnecessary overhead. Contact processing is automatically enabled when a contact sensor is created, so manual configuration is no longer required.
+[2026-11-04 18:03:51,539][ogn_registration][INFO] - Looking for Python nodes to register in omni.physx.fabric-107.3.26
+[2026-11-04 18:03:51,539][ogn_registration][INFO] -  -> Registered nodes from module omni.physxfabric at /data/anaconda3/envs/isaacsim_510/lib/python3.11/site-packages/isaacsim/extscache/omni.physx.fabric-107.3.26+107.3.3.lx64.r.cp311.u353
+[2026-11-04 18:03:51,540][ogn_registration][INFO] - Registering nodes in /data/anaconda3/envs/isaacsim_510/lib/python3.11/site-packages/isaacsim/extscache/omni.physx.fabric-107.3.26+107.3.3.lx64.r.cp311.u353 imported as omni.physxfabric with AutoNode config {}
+[2026-11-04 18:03:51,540][ogn_registration][INFO] - Registering Python Node Types from omni.physxfabric at /data/anaconda3/envs/isaacsim_510/lib/python3.11/site-packages/isaacsim/extscache/omni.physx.fabric-107.3.26+107.3.3.lx64.r.cp311.u353 in omni.physx.fabric
+[2026-11-04 18:03:51,540][ogn_registration][INFO] - ========================================================================================================================
+[2026-11-04 18:03:51,542][ogn_registration][INFO] - No dependency on omni.graph, therefore no nodes to register in omni.physx.fabric
+[2026-11-04 18:03:51,542][ogn_registration][INFO] - ...None found, no registration to do
+[2026-11-04 18:03:51,542][ogn_registration][INFO] - ...Skipping: No OmniGraph presence in the module omni.physxfabric - No nodes in this module, do not remember it
+[2026-11-04 18:03:51,542][ogn_registration][INFO] - Destroying registration record for omni.physx.fabric
+[2026-11-04 18:03:51,542][ogn_registration][INFO] - OGN register omni.physx.fabric-107.3.26 took 3171758.000000
+[INFO]: Base environment:
+	Environment device    : cuda:0
+	Environment seed      : None
+	Physics step-size     : 0.005
+	Rendering step-size   : 0.02
+	Environment step-size : 0.02
+[INFO]: Time taken for scene creation : 4.722008 seconds
+[INFO]: Scene manager:  <class InteractiveScene>
+	Number of environments: 3
+	Environment spacing   : 2.0
+	Source prim name      : /World/envs/env_0
+	Global prim paths     : []
+	Replicate physics     : True
+[INFO]: Starting the simulation. This may take a few seconds. Please wait...
+2026-11-04T10:03:58Z [39,959ms] [Warning] [omni.hydra] Mesh '/__Prototype_11920163974880798964/mesh_0' has corrupted data in primvar 'st': buffer size 6270 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,959ms] [Warning] [omni.hydra] Mesh '/__Prototype_9249459249493537703/mesh_0' has corrupted data in primvar 'st': buffer size 6270 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_11920163974880798964/mesh_0' has corrupted data in primvar 'st_1': buffer size 19536 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,959ms] [Warning] [omni.hydra] Mesh '/__Prototype_4988299400318642876/mesh_0' has corrupted data in primvar 'st': buffer size 6270 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_17657579462717289149/mesh_0' has corrupted data in primvar 'st': buffer size 56922 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_9361768168784622320/mesh_0' has corrupted data in primvar 'st': buffer size 35124 doesn't match expected size 90378 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_7677181754714936218/mesh_0' has corrupted data in primvar 'st': buffer size 56922 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_17365619108587152245/mesh_0' has corrupted data in primvar 'st': buffer size 35124 doesn't match expected size 90378 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_5020945076074816532/mesh_0' has corrupted data in primvar 'st': buffer size 35124 doesn't match expected size 90402 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_13322334623641367634/mesh_0' has corrupted data in primvar 'st': buffer size 35124 doesn't match expected size 90402 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_3472759832488839835/mesh_0' has corrupted data in primvar 'st': buffer size 56922 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_17658574861032171226/mesh_0' has corrupted data in primvar 'st': buffer size 56922 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_13474969840495255918/mesh_0' has corrupted data in primvar 'st': buffer size 178533 doesn't match expected size 233784 in faceVarying primvars
+2026-11-04T10:03:58Z [39,959ms] [Warning] [omni.hydra] Mesh '/__Prototype_422667710062656741/mesh_0' has corrupted data in primvar 'st': buffer size 6270 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_13474969840495255918/mesh_0' has corrupted data in primvar 'st_1': buffer size 6960 doesn't match expected size 233784 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_4988299400318642876/mesh_0' has corrupted data in primvar 'st_1': buffer size 19536 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_13474969840495255918/mesh_0' has corrupted data in primvar 'st_3': buffer size 11886 doesn't match expected size 233784 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_9361768168784622320/mesh_0' has corrupted data in primvar 'st_1': buffer size 55254 doesn't match expected size 90378 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_13474969840495255918/mesh_0' has corrupted data in primvar 'st_4': buffer size 30390 doesn't match expected size 233784 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_17365619108587152245/mesh_0' has corrupted data in primvar 'st_1': buffer size 55254 doesn't match expected size 90378 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_5020945076074816532/mesh_0' has corrupted data in primvar 'st_1': buffer size 55278 doesn't match expected size 90402 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_13322334623641367634/mesh_0' has corrupted data in primvar 'st_1': buffer size 55278 doesn't match expected size 90402 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_3472759832488839835/mesh_0' has corrupted data in primvar 'st_1': buffer size 54198 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_17658574861032171226/mesh_0' has corrupted data in primvar 'st_1': buffer size 54198 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_9249459249493537703/mesh_0' has corrupted data in primvar 'st_1': buffer size 19536 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_422667710062656741/mesh_0' has corrupted data in primvar 'st_1': buffer size 19536 doesn't match expected size 25806 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_17657579462717289149/mesh_0' has corrupted data in primvar 'st_1': buffer size 54198 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,960ms] [Warning] [omni.hydra] Mesh '/__Prototype_7677181754714936218/mesh_0' has corrupted data in primvar 'st_1': buffer size 54198 doesn't match expected size 111120 in faceVarying primvars
+2026-11-04T10:03:58Z [39,961ms] [Warning] [omni.hydra] Mesh '/__Prototype_13474969840495255918/mesh_0' has corrupted data in primvar 'st_2': buffer size 6015 doesn't match expected size 233784 in faceVarying primvars
+[INFO]: Time taken for simulation start : 1.992877 seconds
+2026-11-04T10:03:58Z [40,092ms] [Warning] [isaaclab.envs.mdp.commands.velocity_command] The velocity command has the 'ranges.heading' attribute set to '(0, 0)' but the heading command is not active. Consider setting the flag for the heading command to True.
+[INFO] Command Manager:  <CommandManager> contains 1 active terms.
++-----------------------------------------------+
+|              Active Command Terms             |
++-------+--------------+------------------------+
+| Index | Name         |          Type          |
++-------+--------------+------------------------+
+|   0   | base_vel_cmd | UniformVelocityCommand |
++-------+--------------+------------------------+
+
+[INFO] Event Manager:  <EventManager> contains 0 active terms.
+
+[INFO] Recorder Manager:  <RecorderManager> contains 0 active terms.
++---------------------+
+| Active Recorder Terms |
++-----------+---------+
+|   Index   | Name    |
++-----------+---------+
++-----------+---------+
+
+[INFO] Action Manager:  <ActionManager> contains 1 active terms.
++------------------------------------+
+|  Active Action Terms (shape: 12)   |
++--------+-------------+-------------+
+| Index  | Name        |   Dimension |
++--------+-------------+-------------+
+|   0    | joint_pos   |          12 |
++--------+-------------+-------------+
+
+[INFO] Observation Manager: <ObservationManager> contains 1 groups.
++----------------------------------------------------------+
+| Active Observation Terms in Group: 'policy' (shape: (235,)) |
++-----------+--------------------------------+-------------+
+|   Index   | Name                           |    Shape    |
++-----------+--------------------------------+-------------+
+|     0     | base_lin_vel                   |     (3,)    |
+|     1     | base_ang_vel                   |     (3,)    |
+|     2     | projected_gravity              |     (3,)    |
+|     3     | base_vel_cmd                   |     (3,)    |
+|     4     | joint_pos                      |    (12,)    |
+|     5     | joint_vel                      |    (12,)    |
+|     6     | actions                        |    (12,)    |
+|     7     | height_scan                    |    (187,)   |
++-----------+--------------------------------+-------------+
+
+[INFO] Termination Manager:  <TerminationManager> contains 0 active terms.
++----------------------------+
+|  Active Termination Terms  |
++--------+-------+-----------+
+| Index  | Name  |  Time Out |
++--------+-------+-----------+
++--------+-------+-----------+
+
+[INFO] Reward Manager:  <RewardManager> contains 0 active terms.
++-----------------------+
+|  Active Reward Terms  |
++-------+------+--------+
+| Index | Name | Weight |
++-------+------+--------+
++-------+------+--------+
+
+[INFO] Curriculum Manager:  <CurriculumManager> contains 0 active terms.
++----------------------+
+| Active Curriculum Terms |
++-----------+----------+
+|   Index   | Name     |
++-----------+----------+
++-----------+----------+
+
+Creating window for environment.
+[INFO]: Completed setting up the environment...
+2026-11-04T10:03:58Z [40,534ms] [Warning] [isaacsim.core.utils.semantics] Function 'add_update_semantics' uses the deprecated SemanticsAPI. Consider upgrading the semantics with `upgrade_prim_semantics_to_labels(prim)` first and then using `add_labels` instead.
+[INFO] Generating terrains randomly took : 0.225227 seconds
+2026-11-04T10:03:59Z [41,049ms] [Warning] [isaacsim.core.utils.semantics] Function 'add_update_semantics' uses the deprecated SemanticsAPI. Consider upgrading the semantics with `upgrade_prim_semantics_to_labels(prim)` first and then using `add_labels` instead.
+2026-11-04T10:03:59Z [41,049ms] [Warning] [isaacsim.core.utils.semantics] Function 'add_update_semantics' uses the deprecated SemanticsAPI. Consider upgrading the semantics with `upgrade_prim_semantics_to_labels(prim)` first and then using `add_labels` instead.
+2026-11-04T10:04:00Z [42,640ms] [Warning] [isaacsim.sensors.camera.camera] 'verticalAperture' (1.5290800094604493) and 'horizontalAperture' (2.0954999923706055) are inconsistent with the pixel resolution aspect ratio (1.3333333333333333). Setting 'verticalAperture' to 1.571624994277954 to ensure square pixels.
+2026-11-04T10:04:01Z [42,697ms] [Warning] [isaacsim.sensors.camera.camera] 'verticalAperture' (1.5716249465942382) and 'horizontalAperture' (0.023999999463558196) are inconsistent with the pixel resolution aspect ratio (1.3333333333333333). Setting 'verticalAperture' to 0.01799999959766865 to ensure square pixels.
+2026-11-04T10:04:02Z [43,917ms] [Warning] [carb] Client omni.hydratexture.plugin has acquired [carb::settings::ISettings v1.0] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+[INFO] 3 Go2 robots spawned
+[INFO] Press 1/2/3 or F1/F2/F3 to select robot, WASDZC to control
+[INFO]       1-9 or F1-F9 select robots 0-8
+[INFO]       W:Fwd A:Left S:Back D:Right Z:LeftTurn C:RightTurn
+2026-11-04T10:04:03Z [45,218ms] [Warning] [omni.fabric.plugin] USD->Fabric: Unhandled array type string[]
+2026-11-04T10:04:03Z [45,304ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-11-04T10:04:03Z [45,305ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-11-04T10:04:03Z [45,305ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-11-04T10:04:03Z [45,306ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-11-04T10:04:03Z [45,306ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-11-04T10:04:03Z [45,307ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-11-04T10:04:03Z [45,310ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-11-04T10:04:03Z [45,310ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-11-04T10:04:03Z [45,311ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-11-04T10:04:03Z [45,312ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-11-04T10:04:03Z [45,313ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-11-04T10:04:03Z [45,313ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-11-04T10:04:03Z [45,313ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-11-04T10:04:03Z [45,313ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-11-04T10:04:03Z [45,314ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-11-04T10:04:03Z [45,314ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-11-04T10:04:03Z [45,316ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-11-04T10:04:03Z [45,316ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-11-04T10:04:03Z [45,406ms] [Warning] [omni.hydra] Camera '/World/envs/env_2/Go2/base/front_cam': Unknown projection type, defaulting to pinhole
+2026-11-04T10:04:03Z [45,406ms] [Warning] [omni.hydra] Camera '/World/envs/env_0/Go2/base/front_cam': Unknown projection type, defaulting to pinhole
+2026-11-04T10:04:03Z [45,406ms] [Warning] [omni.hydra] Camera '/World/envs/env_1/Go2/base/front_cam': Unknown projection type, defaulting to pinhole
+2026-11-04T10:04:04Z [45,925ms] [Warning] [omni.sensors.nv.lidar.lidar_core.plugin] MotionBVH for lidar model not enabled. This will result in an incorrect point cloud without motion effects!
+2026-11-04T10:04:04Z [45,942ms] [Warning] [carb] Client omni.sensors.nv.materials.composite_material has acquired [omni::sensors::materials::IMaterialReaderFactory v0.1] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+2026-11-04T10:04:04Z [46,626ms] [Warning] [rtx.postprocessing.plugin] DLSS increasing input dimensions: Render resolution of (371, 278) is below minimal input resolution of 300.
+2026-11-04T10:04:05Z [46,762ms] [Warning] [omni.syntheticdata.plugin] OgnSdPostRenderVarToHost : rendervar copy from texture directly to host buffer is counter-performant. Please use copy from texture to device buffer first.
+2026-11-04T10:04:05Z [46,823ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 22/30
+2026-11-04T10:04:05Z [46,829ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 22/30
+2026-11-04T10:04:05Z [46,833ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 22/30
+2026-11-04T10:04:05Z [46,834ms] [Warning] [omni.timeline.plugin] Deprecated: direct use of ITimeline callbacks is deprecated. Use ITimeline::getTimeline (Python: omni.timeline.get_timeline_interface) instead.
+2026-11-04T10:04:05Z [46,945ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 23/30
+2026-11-04T10:04:05Z [46,951ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 23/30
+2026-11-04T10:04:05Z [46,957ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 23/30
+2026-11-04T10:04:05Z [47,058ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 24/30
+2026-11-04T10:04:05Z [47,064ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 24/30
+2026-11-04T10:04:05Z [47,069ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 24/30
+2026-11-04T10:04:05Z [47,125ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 25/30
+2026-11-04T10:04:05Z [47,130ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 25/30
+2026-11-04T10:04:05Z [47,135ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 25/30
+2026-11-04T10:04:05Z [47,195ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 26/30
+2026-11-04T10:04:05Z [47,203ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 26/30
+2026-11-04T10:04:05Z [47,209ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 26/30
+2026-11-04T10:04:05Z [47,270ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 27/30
+2026-11-04T10:04:05Z [47,276ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 27/30
+2026-11-04T10:04:05Z [47,282ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 27/30
+2026-11-04T10:04:05Z [47,344ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 28/30
+2026-11-04T10:04:05Z [47,349ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 28/30
+2026-11-04T10:04:05Z [47,354ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 28/30
+2026-11-04T10:04:05Z [47,412ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 29/30
+2026-11-04T10:04:05Z [47,416ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 29/30
+2026-11-04T10:04:05Z [47,421ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 29/30
+2026-11-04T10:04:05Z [47,480ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 30/30
+2026-11-04T10:04:05Z [47,485ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 30/30
+2026-11-04T10:04:05Z [47,490ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 30/30
+2026-11-04T10:04:05Z [47,541ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 31/30
+2026-11-04T10:04:05Z [47,550ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 31/30
+2026-11-04T10:04:05Z [47,558ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 31/30
+2026-11-04T10:04:05Z [47,621ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 32/30
+2026-11-04T10:04:05Z [47,629ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 32/30
+2026-11-04T10:04:05Z [47,637ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 32/30
+2026-11-04T10:04:06Z [47,822ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 33/30
+2026-11-04T10:04:06Z [47,829ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 33/30
+2026-11-04T10:04:06Z [47,836ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 33/30
+2026-11-04T10:04:06Z [47,914ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 34/30
+2026-11-04T10:04:06Z [47,930ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 34/30
+2026-11-04T10:04:06Z [47,947ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 34/30
+2026-11-04T10:04:06Z [48,026ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 35/30
+2026-11-04T10:04:06Z [48,031ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 35/30
+2026-11-04T10:04:06Z [48,036ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 35/30
+2026-11-04T10:04:06Z [48,265ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 36/30
+2026-11-04T10:04:06Z [48,277ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 36/30
+2026-11-04T10:04:06Z [48,291ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 36/30
+2026-11-04T10:04:06Z [48,372ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 37/30
+2026-11-04T10:04:06Z [48,376ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 37/30
+2026-11-04T10:04:06Z [48,381ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 37/30
+2026-11-04T10:04:06Z [48,452ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 38/30
+2026-11-04T10:04:06Z [48,480ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 38/30
+2026-11-04T10:04:06Z [48,503ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 38/30
+2026-11-04T10:04:07Z [48,740ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 39/30
+2026-11-04T10:04:07Z [48,744ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 39/30
+2026-11-04T10:04:07Z [48,748ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 39/30
+2026-11-04T10:04:07Z [48,812ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 40/30
+2026-11-04T10:04:07Z [48,822ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 40/30
+2026-11-04T10:04:07Z [48,834ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 40/30
+2026-11-04T10:04:07Z [48,910ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 41/30
+2026-11-04T10:04:07Z [48,916ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 41/30
+2026-11-04T10:04:07Z [48,922ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 41/30
+2026-11-04T10:04:07Z [49,126ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 42/30
+2026-11-04T10:04:07Z [49,138ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 42/30
+2026-11-04T10:04:07Z [49,148ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 42/30
+2026-11-04T10:04:07Z [49,228ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 43/30
+2026-11-04T10:04:07Z [49,233ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 43/30
+2026-11-04T10:04:07Z [49,237ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 43/30
+2026-11-04T10:04:07Z [49,304ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 44/30
+2026-11-04T10:04:07Z [49,314ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 44/30
+2026-11-04T10:04:07Z [49,325ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 44/30
+2026-11-04T10:04:07Z [49,489ms] [Warning] [carb] Client gpu.foundation.plugin has acquired [gpu::unstable::IMemoryBudgetManagerFactory v0.1] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+2026-11-04T10:04:07Z [49,515ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 45/30
+2026-11-04T10:04:07Z [49,520ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 45/30
+2026-11-04T10:04:07Z [49,525ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 45/30
+2026-11-04T10:04:07Z [49,598ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 46/30
+2026-11-04T10:04:07Z [49,616ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 46/30
+2026-11-04T10:04:07Z [49,626ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 46/30
+2026-11-04T10:04:08Z [49,703ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 47/30
+2026-11-04T10:04:08Z [49,708ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 47/30
+2026-11-04T10:04:08Z [49,713ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 47/30
+2026-11-04T10:04:08Z [49,895ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 48/30
+2026-11-04T10:04:08Z [49,913ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 48/30
+2026-11-04T10:04:08Z [49,931ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 48/30
+2026-11-04T10:04:08Z [50,038ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 49/30
+2026-11-04T10:04:08Z [50,043ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 49/30
+2026-11-04T10:04:08Z [50,049ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 49/30
+2026-11-04T10:04:08Z [50,135ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 50/30
+2026-11-04T10:04:08Z [50,146ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 50/30
+2026-11-04T10:04:08Z [50,156ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 50/30
+2026-11-04T10:04:08Z [50,344ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 51/30
+2026-11-04T10:04:08Z [50,351ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 51/30
+2026-11-04T10:04:08Z [50,359ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 51/30
+2026-11-04T10:04:08Z [50,448ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 52/30
+2026-11-04T10:04:08Z [50,458ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 52/30
+2026-11-04T10:04:08Z [50,467ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 52/30
+2026-11-04T10:04:08Z [50,545ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 53/30
+2026-11-04T10:04:08Z [50,550ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 53/30
+2026-11-04T10:04:08Z [50,555ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 53/30
+2026-11-04T10:04:09Z [50,749ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 54/30
+2026-11-04T10:04:09Z [50,759ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 54/30
+2026-11-04T10:04:09Z [50,770ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 54/30
+2026-11-04T10:04:09Z [50,847ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 55/30
+2026-11-04T10:04:09Z [50,853ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 55/30
+2026-11-04T10:04:09Z [50,857ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 55/30
+2026-11-04T10:04:09Z [50,927ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 56/30
+2026-11-04T10:04:09Z [50,936ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 56/30
+2026-11-04T10:04:09Z [50,946ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 56/30
+2026-11-04T10:04:09Z [51,131ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 57/30
+2026-11-04T10:04:09Z [51,136ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 57/30
+2026-11-04T10:04:09Z [51,141ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 57/30
+2026-11-04T10:04:09Z [51,210ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 58/30
+2026-11-04T10:04:09Z [51,220ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 58/30
+2026-11-04T10:04:09Z [51,229ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 58/30
+2026-11-04T10:04:09Z [51,309ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 59/30
+2026-11-04T10:04:09Z [51,316ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 59/30
+2026-11-04T10:04:09Z [51,323ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 59/30
+2026-11-04T10:04:09Z [51,532ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 60/30
+2026-11-04T10:04:09Z [51,543ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 60/30
+2026-11-04T10:04:09Z [51,552ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 60/30
+2026-11-04T10:04:09Z [51,635ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 61/30
+2026-11-04T10:04:09Z [51,643ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 61/30
+2026-11-04T10:04:09Z [51,651ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 61/30
+2026-11-04T10:04:10Z [51,742ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 62/30
+2026-11-04T10:04:10Z [51,755ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 62/30
+2026-11-04T10:04:10Z [51,765ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 62/30
+2026-11-04T10:04:10Z [52,078ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 63/30
+2026-11-04T10:04:10Z [52,084ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 63/30
+2026-11-04T10:04:10Z [52,089ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 63/30
+2026-11-04T10:04:10Z [52,169ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 64/30
+2026-11-04T10:04:10Z [52,181ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 64/30
+2026-11-04T10:04:10Z [52,194ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 64/30
+2026-11-04T10:04:10Z [52,280ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 65/30
+2026-11-04T10:04:10Z [52,285ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 65/30
+2026-11-04T10:04:10Z [52,290ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 65/30
+2026-11-04T10:04:10Z [52,496ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 66/30
+2026-11-04T10:04:10Z [52,507ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 66/30
+2026-11-04T10:04:10Z [52,519ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 66/30
+2026-11-04T10:04:10Z [52,605ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 67/30
+2026-11-04T10:04:10Z [52,612ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 67/30
+2026-11-04T10:04:10Z [52,619ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 67/30
+2026-11-04T10:04:11Z [52,705ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 68/30
+2026-11-04T10:04:11Z [52,723ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 68/30
+2026-11-04T10:04:11Z [52,740ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 68/30
+2026-11-04T10:04:11Z [52,963ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 69/30
+2026-11-04T10:04:11Z [52,969ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 69/30
+2026-11-04T10:04:11Z [52,974ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 69/30
+2026-11-04T10:04:11Z [53,043ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 70/30
+2026-11-04T10:04:11Z [53,054ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 70/30
+2026-11-04T10:04:11Z [53,064ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 70/30
+2026-11-04T10:04:11Z [53,142ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 71/30
+2026-11-04T10:04:11Z [53,147ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 71/30
+2026-11-04T10:04:11Z [53,152ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 71/30
+2026-11-04T10:04:11Z [53,352ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 72/30
+2026-11-04T10:04:11Z [53,363ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 72/30
+2026-11-04T10:04:11Z [53,375ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 72/30
+2026-11-04T10:04:11Z [53,450ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 73/30
+2026-11-04T10:04:11Z [53,455ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 73/30
+2026-11-04T10:04:11Z [53,460ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 73/30
+2026-11-04T10:04:11Z [53,530ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 74/30
+2026-11-04T10:04:11Z [53,541ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 74/30
+2026-11-04T10:04:11Z [53,553ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 74/30
+2026-11-04T10:04:12Z [53,787ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 75/30
+2026-11-04T10:04:12Z [53,793ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 75/30
+2026-11-04T10:04:12Z [53,801ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 75/30
+2026-11-04T10:04:12Z [53,892ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 76/30
+2026-11-04T10:04:12Z [53,904ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 76/30
+2026-11-04T10:04:12Z [53,915ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 76/30
+2026-11-04T10:04:12Z [53,994ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 77/30
+2026-11-04T10:04:12Z [54,000ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 77/30
+2026-11-04T10:04:12Z [54,005ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 77/30
+2026-11-04T10:04:12Z [54,223ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 78/30
+2026-11-04T10:04:12Z [54,240ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 78/30
+2026-11-04T10:04:12Z [54,257ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 78/30
+2026-11-04T10:04:12Z [54,365ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 79/30
+2026-11-04T10:04:12Z [54,371ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 79/30
+2026-11-04T10:04:12Z [54,377ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 79/30
+2026-11-04T10:04:12Z [54,451ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 80/30
+2026-11-04T10:04:12Z [54,465ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 80/30
+2026-11-04T10:04:12Z [54,478ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 80/30
+2026-11-04T10:04:13Z [54,708ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 81/30
+2026-11-04T10:04:13Z [54,715ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 81/30
+2026-11-04T10:04:13Z [54,721ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 81/30
+2026-11-04T10:04:13Z [54,794ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 82/30
+2026-11-04T10:04:13Z [54,807ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 82/30
+2026-11-04T10:04:13Z [54,819ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 82/30
+[STEP 50] 106.73ms RTF=0.19
+2026-11-04T10:04:13Z [54,901ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 83/30
+2026-11-04T10:04:13Z [54,907ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 83/30
+2026-11-04T10:04:13Z [54,912ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 83/30
+2026-11-04T10:04:13Z [55,116ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 84/30
+2026-11-04T10:04:13Z [55,126ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 84/30
+2026-11-04T10:04:13Z [55,135ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 84/30
+2026-11-04T10:04:13Z [55,205ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 85/30
+2026-11-04T10:04:13Z [55,209ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 85/30
+2026-11-04T10:04:13Z [55,213ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 85/30
+2026-11-04T10:04:13Z [55,278ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 86/30
+2026-11-04T10:04:13Z [55,288ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 86/30
+2026-11-04T10:04:13Z [55,297ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 86/30
+2026-11-04T10:04:13Z [55,506ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 87/30
+2026-11-04T10:04:13Z [55,513ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 87/30
+2026-11-04T10:04:13Z [55,520ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 87/30
+2026-11-04T10:04:13Z [55,606ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 88/30
+2026-11-04T10:04:13Z [55,620ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 88/30
+2026-11-04T10:04:13Z [55,634ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 88/30
+2026-11-04T10:04:14Z [55,716ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 89/30
+2026-11-04T10:04:14Z [55,724ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 89/30
+2026-11-04T10:04:14Z [55,731ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 89/30
+2026-11-04T10:04:14Z [55,990ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 90/30
+2026-11-04T10:04:14Z [56,000ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 90/30
+2026-11-04T10:04:14Z [56,009ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 90/30
+2026-11-04T10:04:14Z [56,087ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 91/30
+2026-11-04T10:04:14Z [56,091ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 91/30
+2026-11-04T10:04:14Z [56,096ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 91/30
+2026-11-04T10:04:14Z [56,176ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 92/30
+2026-11-04T10:04:14Z [56,187ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 92/30
+2026-11-04T10:04:14Z [56,198ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 92/30
+2026-11-04T10:04:14Z [56,411ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 93/30
+2026-11-04T10:04:14Z [56,419ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 93/30
+2026-11-04T10:04:14Z [56,426ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 93/30
+2026-11-04T10:04:14Z [56,517ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 94/30
+2026-11-04T10:04:14Z [56,528ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 94/30
+2026-11-04T10:04:14Z [56,539ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 94/30
+2026-11-04T10:04:14Z [56,619ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 95/30
+2026-11-04T10:04:14Z [56,624ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 95/30
+2026-11-04T10:04:14Z [56,629ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 95/30
+2026-11-04T10:04:15Z [56,838ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 96/30
+2026-11-04T10:04:15Z [56,848ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 96/30
+2026-11-04T10:04:15Z [56,858ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 96/30
+2026-11-04T10:04:15Z [56,932ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 97/30
+2026-11-04T10:04:15Z [56,937ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 97/30
+2026-11-04T10:04:15Z [56,942ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 97/30
+2026-11-04T10:04:15Z [57,017ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 98/30
+2026-11-04T10:04:15Z [57,028ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 98/30
+2026-11-04T10:04:15Z [57,038ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 98/30
+2026-11-04T10:04:15Z [57,236ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 99/30
+2026-11-04T10:04:15Z [57,239ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 99/30
+2026-11-04T10:04:15Z [57,244ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 99/30
+2026-11-04T10:04:15Z [57,315ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 100/30
+2026-11-04T10:04:15Z [57,324ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 100/30
+2026-11-04T10:04:15Z [57,334ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 100/30
+2026-11-04T10:04:15Z [57,411ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 101/30
+2026-11-04T10:04:15Z [57,416ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 101/30
+2026-11-04T10:04:15Z [57,421ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 101/30
+2026-11-04T10:04:15Z [57,595ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 102/30
+2026-11-04T10:04:15Z [57,605ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 102/30
+2026-11-04T10:04:15Z [57,614ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 102/30
+2026-11-04T10:04:16Z [57,687ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 103/30
+2026-11-04T10:04:16Z [57,691ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 103/30
+2026-11-04T10:04:16Z [57,695ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 103/30
+2026-11-04T10:04:16Z [57,773ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 104/30
+2026-11-04T10:04:16Z [57,782ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 104/30
+2026-11-04T10:04:16Z [57,792ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 104/30
+2026-11-04T10:04:16Z [58,007ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 105/30
+2026-11-04T10:04:16Z [58,014ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 105/30
+2026-11-04T10:04:16Z [58,022ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 105/30
+2026-11-04T10:04:16Z [58,101ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 106/30
+2026-11-04T10:04:16Z [58,113ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 106/30
+2026-11-04T10:04:16Z [58,124ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 106/30
+2026-11-04T10:04:16Z [58,203ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 107/30
+2026-11-04T10:04:16Z [58,209ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 107/30
+2026-11-04T10:04:16Z [58,213ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 107/30
+2026-11-04T10:04:16Z [58,426ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 108/30
+2026-11-04T10:04:16Z [58,443ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 108/30
+2026-11-04T10:04:16Z [58,460ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 108/30
+2026-11-04T10:04:16Z [58,556ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 109/30
+2026-11-04T10:04:16Z [58,561ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 109/30
+2026-11-04T10:04:16Z [58,566ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 109/30
+2026-11-04T10:04:16Z [58,634ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 110/30
+2026-11-04T10:04:16Z [58,644ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 110/30
+2026-11-04T10:04:16Z [58,654ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 110/30
+2026-11-04T10:04:17Z [58,845ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 111/30
+2026-11-04T10:04:17Z [58,850ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 111/30
+2026-11-04T10:04:17Z [58,854ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 111/30
+2026-11-04T10:04:17Z [58,929ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 112/30
+2026-11-04T10:04:17Z [58,946ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 112/30
+2026-11-04T10:04:17Z [58,963ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 112/30
+2026-11-04T10:04:17Z [59,066ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 113/30
+2026-11-04T10:04:17Z [59,069ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 113/30
+2026-11-04T10:04:17Z [59,073ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 113/30
+2026-11-04T10:04:17Z [59,262ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 114/30
+2026-11-04T10:04:17Z [59,272ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 114/30
+2026-11-04T10:04:17Z [59,282ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 114/30
+2026-11-04T10:04:17Z [59,358ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 115/30
+2026-11-04T10:04:17Z [59,362ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 115/30
+2026-11-04T10:04:17Z [59,366ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 115/30
+2026-11-04T10:04:17Z [59,435ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 116/30
+2026-11-04T10:04:17Z [59,446ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 116/30
+2026-11-04T10:04:17Z [59,458ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 116/30
+2026-11-04T10:04:17Z [59,665ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 117/30
+2026-11-04T10:04:17Z [59,670ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 117/30
+2026-11-04T10:04:17Z [59,676ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 117/30
+2026-11-04T10:04:18Z [59,748ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 118/30
+2026-11-04T10:04:18Z [59,758ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 118/30
+2026-11-04T10:04:18Z [59,769ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 118/30
+2026-11-04T10:04:18Z [59,849ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 119/30
+2026-11-04T10:04:18Z [59,854ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 119/30
+2026-11-04T10:04:18Z [59,858ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 119/30
+2026-11-04T10:04:18Z [60,042ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 120/30
+2026-11-04T10:04:18Z [60,053ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 120/30
+2026-11-04T10:04:18Z [60,063ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 120/30
+2026-11-04T10:04:18Z [60,146ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 121/30
+2026-11-04T10:04:18Z [60,152ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 121/30
+2026-11-04T10:04:18Z [60,157ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 121/30
+2026-11-04T10:04:18Z [60,226ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 122/30
+2026-11-04T10:04:18Z [60,236ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 122/30
+2026-11-04T10:04:18Z [60,248ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 122/30
+2026-11-04T10:04:18Z [60,447ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 123/30
+2026-11-04T10:04:18Z [60,455ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 123/30
+2026-11-04T10:04:18Z [60,462ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 123/30
+2026-11-04T10:04:18Z [60,538ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 124/30
+2026-11-04T10:04:18Z [60,550ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 124/30
+2026-11-04T10:04:18Z [60,562ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 124/30
+2026-11-04T10:04:18Z [60,643ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 125/30
+2026-11-04T10:04:18Z [60,650ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 125/30
+2026-11-04T10:04:18Z [60,658ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 125/30
+2026-11-04T10:04:19Z [60,899ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 126/30
+2026-11-04T10:04:19Z [60,909ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 126/30
+2026-11-04T10:04:19Z [60,919ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 126/30
+2026-11-04T10:04:19Z [60,992ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 127/30
+2026-11-04T10:04:19Z [60,997ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 127/30
+2026-11-04T10:04:19Z [61,002ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 127/30
+2026-11-04T10:04:19Z [61,070ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 128/30
+2026-11-04T10:04:19Z [61,079ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 128/30
+2026-11-04T10:04:19Z [61,088ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 128/30
+2026-11-04T10:04:19Z [61,292ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 129/30
+2026-11-04T10:04:19Z [61,297ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 129/30
+2026-11-04T10:04:19Z [61,302ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 129/30
+2026-11-04T10:04:19Z [61,377ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 130/30
+2026-11-04T10:04:19Z [61,386ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 130/30
+2026-11-04T10:04:19Z [61,395ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 130/30
+2026-11-04T10:04:19Z [61,475ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 131/30
+2026-11-04T10:04:19Z [61,483ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 131/30
+2026-11-04T10:04:19Z [61,490ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 131/30
+2026-11-04T10:04:20Z [61,697ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 132/30
+2026-11-04T10:04:20Z [61,709ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 132/30
+2026-11-04T10:04:20Z [61,718ms] [Warning] [isaacsim.core.simulation_manager.plugin] No adjacent samples found for interpolation at time 132/30

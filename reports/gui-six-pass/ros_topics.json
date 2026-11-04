@@ -1,0 +1,43 @@
+{
+  "counts": {
+    "rgb": 62,
+    "depth": 62,
+    "semantic": 62,
+    "lidar": 62,
+    "odom": 62,
+    "info": 62,
+    "tf": 62
+  },
+  "details": {
+    "semantic": {
+      "encoding": "32SC1",
+      "width": 640,
+      "height": 480,
+      "bytes": 1228800
+    },
+    "lidar": {
+      "points": 68097,
+      "frame": "unitree_go2/lidar"
+    },
+    "odom": {
+      "position": [
+        3.153120756149292,
+        0.39127078652381897,
+        0.41874948143959045
+      ]
+    },
+    "rgb": {
+      "encoding": "rgb8",
+      "width": 640,
+      "height": 480,
+      "bytes": 921600
+    },
+    "depth": {
+      "encoding": "32FC1",
+      "width": 640,
+      "height": 480,
+      "bytes": 1228800
+    }
+  },
+  "elapsed_s": 50.86467976699896
+}

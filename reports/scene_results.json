@@ -1,0 +1,62 @@
+[
+  {
+    "name": "full-warehouse",
+    "pass": true,
+    "robots": 1,
+    "warehouse_meshes": 3470
+  },
+  {
+    "name": "multi-flat",
+    "pass": true,
+    "robots": 3,
+    "warehouse_meshes": 0
+  },
+  {
+    "name": "multi-rough",
+    "pass": true,
+    "robots": 3,
+    "warehouse_meshes": 0
+  },
+  {
+    "name": "multi-sensors",
+    "pass": true,
+    "robots": 3,
+    "warehouse_meshes": 0
+  },
+  {
+    "name": "obstacle-dense",
+    "pass": true,
+    "robots": 1,
+    "warehouse_meshes": 0
+  },
+  {
+    "name": "obstacle-medium",
+    "pass": true,
+    "robots": 1,
+    "warehouse_meshes": 0
+  },
+  {
+    "name": "obstacle-sparse",
+    "pass": true,
+    "robots": 1,
+    "warehouse_meshes": 0
+  },
+  {
+    "name": "warehouse",
+    "pass": true,
+    "robots": 1,
+    "warehouse_meshes": 781
+  },
+  {
+    "name": "warehouse-forklifts",
+    "pass": true,
+    "robots": 1,
+    "warehouse_meshes": 786
+  },
+  {
+    "name": "warehouse-shelves",
+    "pass": true,
+    "robots": 1,
+    "warehouse_meshes": 1878
+  }
+]

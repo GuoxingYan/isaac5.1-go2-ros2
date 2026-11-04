@@ -51,7 +51,7 @@ class Go2SimCfg(InteractiveSceneCfg):
     height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Go2/base",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20)), 
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]), 
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
@@ -105,7 +105,7 @@ class CommandsCfg:
     base_vel_cmd = mdp.UniformVelocityCommandCfg(
         asset_name="unitree_go2",
         resampling_time_range=(0.0, 0.0),
-        debug_vis=True,
+        debug_vis=False,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
             lin_vel_x=(0.0, 0.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0, 0)
         ),

@@ -14,26 +14,11 @@ def add_semantic_label():
     Note: In Isaac Sim 5.1, the ground prim path is /World/ground
     and Replicator's get.prims API may not be available in all configurations.
     """
-    from pxr import UsdShade, Sdf
-    try:
-        import omni.replicator.core as rep
-        # Try Replicator API first
-        try:
-            ground_plane = rep.get.prims("/World/ground")
-            with ground_plane:
-                rep.modify.semantics([("class", "floor")])
-        except Exception:
-            # Fallback: set semantic label directly via USD
-            import isaacsim.core.utils.prims as prim_utils
-            prim = prim_utils.get_prim_at_path("/World/ground")
-            if prim:
-                from pxr import Sdf
-                # Use Sdf to set semantic label directly
-                label_attr = prim.CreateAttribute("semantic:class", Sdf.ValueTypeNames.Token)
-                label_attr.Set("floor")
-                print("[INFO] Semantic label 'floor' set via USD API")
-    except ImportError:
-        print("[INFO] Replicator not available - skipping semantic labels")
+    from isaacsim.core.utils.semantics import add_update_semantics
+    for path, label in [("/World/ground", "floor"), ("/World/obstacleTerrain", "obstacle")]:
+        prim = get_prim_at_path(path)
+        if prim and prim.IsValid():
+            add_update_semantics(prim, label)
 
 def create_obstacle_sparse_env():
     add_semantic_label()
@@ -53,12 +38,14 @@ def create_obstacle_sparse_env():
                 num_obstacles=100 ,
                 obstacles_distance=2.0,
                 border_width=5,
+                platform_width=8.0,
                 avoid_positions=[[0, 0]]
             )},
         ),
         visual_material=None,     
     )
-    TerrainImporter(terrain) 
+    TerrainImporter(terrain)
+    add_semantic_label() 
 
 def create_obstacle_medium_env():
     add_semantic_label()
@@ -78,12 +65,14 @@ def create_obstacle_medium_env():
                 num_obstacles=200 ,
                 obstacles_distance=2.0,
                 border_width=5,
+                platform_width=8.0,
                 avoid_positions=[[0, 0]]
             )},
         ),
         visual_material=None,     
     )
-    TerrainImporter(terrain) 
+    TerrainImporter(terrain)
+    add_semantic_label() 
 
 
 def create_obstacle_dense_env():
@@ -104,14 +93,16 @@ def create_obstacle_dense_env():
                 num_obstacles=400,
                 obstacles_distance=2.0,
                 border_width=5,
+                platform_width=8.0,
                 avoid_positions=[[0, 0]]
             )},
         ),
         visual_material=None,     
     )
-    TerrainImporter(terrain) 
+    TerrainImporter(terrain)
+    add_semantic_label() 
 
-LOCAL_ASSET_DIR = "D:/isaac-sim/data/Assets/Isaac/Environments/Simple_Warehouse"
+LOCAL_ASSET_DIR = os.environ.get("GO2_WAREHOUSE_DIR", os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "Simple_Warehouse"))
 
 def _load_warehouse(asset_file: str):
     add_semantic_label()

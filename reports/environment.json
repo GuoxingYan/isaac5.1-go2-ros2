@@ -1,0 +1,13 @@
+{
+  "verified_at": "2026-11-04T18:07:00.209160+08:00",
+  "os": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+  "python": "3.11.18",
+  "packages": {
+    "isaacsim": "5.1.0.0",
+    "isaaclab": "0.47.2",
+    "isaaclab_assets": "0.2.3",
+    "torch": "2.7.0",
+    "numpy": "1.26.0",
+    "rsl-rl-lib": "3.0.1"
+  }
+}

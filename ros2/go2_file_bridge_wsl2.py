@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WSL2-side ROS2 bridge: reads sim data from shared files, publishes as ROS2 topics
+Ubuntu ROS2 file bridge: reads sim data from shared files, publishes as ROS2 topics
 and subscribes to cmd_vel to control the robot.
 Run: /usr/bin/python3 go2_file_bridge_wsl2.py
 """
@@ -11,12 +11,11 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
 from sensor_msgs.msg import Image, PointCloud2, PointField, CameraInfo
 from sensor_msgs_py import point_cloud2
-from tf2_ros import TransformBroadcaster
-from cv_bridge import CvBridge
-import cv2
+from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
+from PIL import Image as PILImage
 import numpy as np
 
-DATA_DIR = "/mnt/d/isaac-sim/data/go2_ros2"
+DATA_DIR = os.environ.get("GO2_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "bridge"))
 CMD_VEL_FILE = os.path.join(DATA_DIR, "cmd_vel.json")
 
 
@@ -26,13 +25,26 @@ class Go2Bridge(Node):
         # Publishers
         self.odom_pub = self.create_publisher(Odometry, "/unitree_go2/odom", 10)
         self.pose_pub = self.create_publisher(PoseStamped, "/unitree_go2/pose", 10)
-        self.img_pub = self.create_publisher(Image, "/unitree_go2/front_cam/color_image", 10)
-        self.depth_pub = self.create_publisher(Image, "/unitree_go2/front_cam/depth_image", 10)
-        self.semseg_pub = self.create_publisher(Image, "/unitree_go2/front_cam/semantic_segmentation_image", 10)
-        self.lidar_pub = self.create_publisher(PointCloud2, "/unitree_go2/lidar/point_cloud", 10)
+        self.img_pub = self.create_publisher(Image, "/unitree_go2/front_cam/color_image", 1)
+        self.depth_pub = self.create_publisher(Image, "/unitree_go2/front_cam/depth_image", 1)
+        self.semseg_pub = self.create_publisher(Image, "/unitree_go2/front_cam/semantic_segmentation_image", 1)
+        self.lidar_pub = self.create_publisher(PointCloud2, "/unitree_go2/lidar/point_cloud", 1)
         self.cam_info_pub = self.create_publisher(CameraInfo, "/unitree_go2/front_cam/info", 10)
         self.tf_broadcaster = TransformBroadcaster(self)
-        self.bridge = CvBridge()
+        self.static_tf = StaticTransformBroadcaster(self)
+        transforms=[]
+        for child, xyz, quat in [
+            ("unitree_go2/lidar", [0.2,0.,0.2], [0.,0.,0.,1.]),
+            ("unitree_go2/front_cam", [0.4,0.,0.2], [-0.5,0.5,-0.5,0.5])]:
+            t=TransformStamped()
+            t.header.stamp=self.get_clock().now().to_msg()
+            t.header.frame_id="unitree_go2/base_link"
+            t.child_frame_id=child
+            t.transform.translation.x,t.transform.translation.y,t.transform.translation.z=xyz
+            t.transform.rotation.x,t.transform.rotation.y,t.transform.rotation.z,t.transform.rotation.w=quat
+            transforms.append(t)
+        self.static_tf.sendTransform(transforms)
+        self.bridge = self
         self.last_frame = -1
         self.latest_cmd_vel = None  # store for debug
 
@@ -47,8 +59,19 @@ class Go2Bridge(Node):
             "  Subscribing: /unitree_go2/cmd_vel"
         )
 
+    @staticmethod
+    def cv2_to_imgmsg(arr, encoding):
+        arr = np.ascontiguousarray(arr)
+        msg = Image()
+        msg.height, msg.width = arr.shape[:2]
+        msg.encoding = encoding
+        msg.is_bigendian = False
+        msg.step = arr.strides[0]
+        msg.data = arr.tobytes()
+        return msg
+
     def _cmd_vel_callback(self, msg: Twist):
-        """Write received cmd_vel to shared file for Windows side to read."""
+        """Write received cmd_vel to shared file for simulation side to read."""
         cmd = {
             "linear_x": msg.linear.x,
             "linear_y": msg.linear.y,
@@ -57,8 +80,9 @@ class Go2Bridge(Node):
         }
         try:
             os.makedirs(DATA_DIR, exist_ok=True)
-            with open(CMD_VEL_FILE, "w") as f:
+            with open(CMD_VEL_FILE + ".tmp", "w") as f:
                 json.dump(cmd, f)
+            os.replace(CMD_VEL_FILE + ".tmp", CMD_VEL_FILE)
             self.latest_cmd_vel = cmd
             self.get_logger().debug(
                 f"cmd_vel received: lin=({msg.linear.x:.2f}, {msg.linear.y:.2f}), ang={msg.angular.z:.2f}"
@@ -127,9 +151,9 @@ class Go2Bridge(Node):
             img_path = os.path.join(DATA_DIR, img_name)
             if os.path.exists(img_path):
                 try:
-                    cv_img = cv2.imread(img_path)
+                    cv_img = np.asarray(PILImage.open(img_path).convert("RGB"))
                     if cv_img is not None:
-                        ros_img = self.bridge.cv2_to_imgmsg(cv_img, "bgr8")
+                        ros_img = self.bridge.cv2_to_imgmsg(cv_img, "rgb8")
                         ros_img.header.stamp = now
                         ros_img.header.frame_id = "unitree_go2/front_cam"
                         self.img_pub.publish(ros_img)
@@ -142,10 +166,10 @@ class Go2Bridge(Node):
                             cam_info.height = h
                             cam_info.width = w
                             cam_info.distortion_model = "plumb_bob"
-                            f = float(w)
-                            cx = float(w) / 2.0
-                            cy = float(h) / 2.0
-                            cam_info.k = (f, 0.0, cx, 0.0, f, cy, 0.0, 0.0, 1.0)
+                            k = np.asarray(data.get("intrinsics", [[w,0,w/2],[0,w,h/2],[0,0,1]]), dtype=float)
+                            cam_info.k = k.ravel().tolist()
+                            cam_info.r = np.eye(3).ravel().tolist()
+                            cam_info.p = np.column_stack([k,np.zeros(3)]).ravel().tolist()
                             self.cam_info_pub.publish(cam_info)
                 except Exception as e:
                     self.get_logger().warn(f"Camera error: {e}")
@@ -156,9 +180,9 @@ class Go2Bridge(Node):
             depth_path = os.path.join(DATA_DIR, depth_name)
             if os.path.exists(depth_path):
                 try:
-                    depth_cv = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
+                    depth_cv = np.load(depth_path)
                     if depth_cv is not None:
-                        ros_depth = self.bridge.cv2_to_imgmsg(depth_cv, "mono8")
+                        ros_depth = self.bridge.cv2_to_imgmsg(depth_cv, "32FC1")
                         ros_depth.header.stamp = now
                         ros_depth.header.frame_id = "unitree_go2/front_cam"
                         self.depth_pub.publish(ros_depth)
@@ -171,9 +195,9 @@ class Go2Bridge(Node):
             sem_path = os.path.join(DATA_DIR, sem_name)
             if os.path.exists(sem_path):
                 try:
-                    sem_cv = cv2.imread(sem_path)
+                    sem_cv = np.load(sem_path).astype(np.int32)
                     if sem_cv is not None:
-                        ros_sem = self.bridge.cv2_to_imgmsg(sem_cv, "bgr8")
+                        ros_sem = self.bridge.cv2_to_imgmsg(sem_cv, "32SC1")
                         ros_sem.header.stamp = now
                         ros_sem.header.frame_id = "unitree_go2/front_cam"
                         self.semseg_pub.publish(ros_sem)
@@ -193,7 +217,9 @@ class Go2Bridge(Node):
                             PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
                             PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
                         ]
-                        pc2 = point_cloud2.create_cloud(odom.header, fields, pts[:, :3])
+                        from std_msgs.msg import Header
+                        header = Header(stamp=now, frame_id="unitree_go2/lidar")
+                        pc2 = point_cloud2.create_cloud(header, fields, pts[:, :3])
                         self.lidar_pub.publish(pc2)
                 except Exception as e:
                     self.get_logger().warn(f"Lidar error: {e}")
@@ -202,11 +228,24 @@ class Go2Bridge(Node):
 def main():
     rclpy.init()
     node = Go2Bridge()
-    while rclpy.ok():
-        node.publish_data()
-        rclpy.spin_once(node, timeout_sec=0.05)
-    node.destroy_node()
-    rclpy.shutdown()
+    import threading
+    from rclpy.executors import SingleThreadedExecutor
+    executor = SingleThreadedExecutor()
+    executor.add_node(node)
+    thread = threading.Thread(target=executor.spin, daemon=True)
+    thread.start()
+    try:
+        while rclpy.ok():
+            node.publish_data()
+            time.sleep(0.02)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        executor.shutdown()
+        thread.join(timeout=2)
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

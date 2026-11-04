@@ -1,0 +1,19 @@
+[INFO] [1793785816.662312564] [go2_file_bridge]: Go2 Bridge started
+  Publishing:  /unitree_go2/odom, /pose, /front_cam/*, /lidar/point_cloud
+  Subscribing: /unitree_go2/cmd_vel
+Traceback (most recent call last):
+  File "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/ros2/go2_file_bridge_wsl2.py", line 239, in <module>
+    node.publish_data()
+  File "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/ros2/go2_file_bridge_wsl2.py", line 233, in main
+    executor = SingleThreadedExecutor()
+  File "/data/apps/ros2-humble/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 208, in spin_once
+    executor.spin_once(timeout_sec=timeout_sec)
+  File "/data/apps/ros2-humble/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 812, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/data/apps/ros2-humble/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 801, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+  File "/data/apps/ros2-humble/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 784, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+  File "/data/apps/ros2-humble/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 685, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

@@ -1,137 +1,105 @@
-"""ROS2 bridge: writes sim data for WSL2, reads cmd_vel from WSL2 to control robot"""
-import os, json, time, numpy as np
-import torch, omni, cv2
+"""Real sensor capture and portable, bounded atomic file transport."""
+import os
+import json
+import time
+from pathlib import Path
+import numpy as np
+import torch
+from PIL import Image
 
-ext_manager = omni.kit.app.get_app().get_extension_manager()
-ext_manager.set_extension_enabled_immediate("isaacsim.ros2.bridge", True)
-
-DATA_DIR = r"D:\isaac-sim\data\go2_ros2"
-os.makedirs(DATA_DIR, exist_ok=True)
-CMD_VEL_FILE = os.path.join(DATA_DIR, "cmd_vel.json")
-
-# Keep track of last cmd_vel to avoid repeated file reads
-_last_cmd_vel_mtime = 0
-
+DATA_DIR = Path(os.environ.get('GO2_DATA_DIR', Path(__file__).resolve().parents[1] / 'outputs/bridge'))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+CMD_VEL_FILE = DATA_DIR / 'cmd_vel.json'
 
 class RobotDataManager:
     def __init__(self, env, lidar_annotators, cameras, cfg):
-        self.cfg = cfg
-        self.env = env
-        self.num_envs = env.unwrapped.scene.num_envs
-        self.lidar_annotators = lidar_annotators
-        self.cameras = cameras
+        self.env, self.cfg = env, cfg
+        self.lidar_annotators, self.cameras = lidar_annotators, cameras
         self.step_count = 0
-        print(f"[ROS2] File bridge started")
+        self.last_cmd = 0
+        self.command_time = None
+        self.latest = {}
+        self.errors = {}
 
     def check_cmd_vel(self):
-        """Read cmd_vel from shared file and apply to robot control.
-        Called each simulation step from the main loop.
-        """
-        global _last_cmd_vel_mtime
+        import go2.go2_ctrl as ctrl
         try:
-            if os.path.exists(CMD_VEL_FILE):
-                mtime = os.path.getmtime(CMD_VEL_FILE)
-                if mtime > _last_cmd_vel_mtime:
-                    _last_cmd_vel_mtime = mtime
-                    with open(CMD_VEL_FILE, "r") as f:
-                        cmd = json.load(f)
-                    import go2.go2_ctrl as go2_ctrl
-                    num_envs = go2_ctrl.base_vel_cmd_input.shape[0] if go2_ctrl.base_vel_cmd_input is not None else 1
-                    # Apply to selected robot (index 0 by default, or the selected robot)
-                    selected = go2_ctrl.selected_robot
-                    if go2_ctrl.base_vel_cmd_input is not None and selected < num_envs:
-                        go2_ctrl.base_vel_cmd_input[selected] = torch.tensor(
-                            [cmd.get("linear_x", 0.0),
-                             cmd.get("linear_y", 0.0),
-                             cmd.get("angular_z", 0.0)],
-                            dtype=torch.float32
-                        )
-                        print(f"\r[cmd_vel] robot={selected} lin=({cmd.get('linear_x',0):.2f},{cmd.get('linear_y',0):.2f}) ang={cmd.get('angular_z',0):.2f}", end='', flush=True)
-        except Exception as e:
-            # Silently handle issues like partial writes from WSL2
+            mtime = CMD_VEL_FILE.stat().st_mtime_ns
+            if mtime != self.last_cmd:
+                cmd = json.loads(CMD_VEL_FILE.read_text())
+                if abs(time.time() - cmd.get('timestamp', 0)) < 2.0:
+                    i = int(cmd.get('robot', ctrl.selected_robot))
+                    if 0 <= i < ctrl.base_vel_cmd_input.shape[0]:
+                        ctrl.set_ros_command(i, [cmd.get(k, 0.) for k in ('linear_x','linear_y','angular_z')])
+                        print('[CMD_VEL APPLIED]',cmd,flush=True)
+                self.last_cmd = mtime
+            ctrl.expire_ros_commands()
+        except (OSError, ValueError, KeyError):
             pass
 
     def pub_ros2_data(self):
         self.step_count += 1
-        if self.step_count % 3 != 0: return
-        frame_id = self.step_count // 3
-        try:
-            scene = self.env.unwrapped.scene
-            rs = scene["unitree_go2"].data.root_state_w
-            pos = rs[0, :3].cpu().numpy()
-            ori = rs[0, 3:7].cpu().numpy()
-            ts = str(int(time.time()*1000))
-            data = {"timestamp": time.time(), "frame": frame_id, "ts": ts, "num_envs": self.num_envs,
-                    "odom": {"position": [float(pos[0]),float(pos[1]),float(pos[2])],
-                             "orientation": [float(ori[1]),float(ori[2]),float(ori[3]),float(ori[0])],
-                             "frame_id": "odom","child_frame_id":"unitree_go2/base_link"}}
-            if self.cameras and self.cfg.sensor.get("enable_camera", False):
-                from PIL import Image
-                try:
-                    rgb = self.cameras[0].get_rgb()
-                    if rgb is not None:
-                        Image.fromarray(rgb).save(os.path.join(DATA_DIR,f"color_{ts}.png"))
-                        data["color_image"] = f"color_{ts}.png"
-                        # Depth: try real depth, fallback to gray blur
-                        try:
-                            depth = self.cameras[0].get_depth()
-                            if depth is not None:
-                                depth_norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-                                Image.fromarray(depth_norm, 'L').save(os.path.join(DATA_DIR,f"depth_{ts}.png"))
-                                data["depth_image"] = f"depth_{ts}.png"
-                            else:
-                                raise ValueError("depth is None")
-                        except Exception:
-                            gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-                            depth = cv2.blur(gray, (15,15)).astype(np.uint8)
-                            Image.fromarray(depth,'L').save(os.path.join(DATA_DIR,f"depth_{ts}.png"))
-                            data["depth_image"] = f"depth_{ts}.png"
-                        # Semantic from edge detection
-                        edges = cv2.Canny(rgb, 50, 150)
-                        sem = cv2.applyColorMap(edges, cv2.COLORMAP_JET)
-                        Image.fromarray(sem).save(os.path.join(DATA_DIR,f"semantic_{ts}.png"))
-                        data["semantic"] = f"semantic_{ts}.png"
-                except Exception as e:
-                    print(f"[DEBUG] camera error: {e}")
-            if self.lidar_annotators and self.cfg.sensor.get("enable_lidar", False):
-                try:
-                    pc = self.lidar_annotators[0].get_data()
-                    if pc is None:
-                        pass
-                    elif isinstance(pc, dict):
-                        # Try point cloud from 'data' key first (IsaacExtract / pointcloud annotator)
-                        pts = pc.get("data", None)
-                        if isinstance(pts, np.ndarray) and pts.size > 0:
-                            pts_out = np.ascontiguousarray(pts.astype(np.float32))
-                            if pts_out.ndim == 2 and pts_out.shape[1] >= 3:
-                                np.save(os.path.join(DATA_DIR,"point_cloud.npy"), pts_out)
-                                data["point_cloud"] = "point_cloud.npy"
-                        else:
-                            # Try scan buffer format (distance, azimuth, elevation)
-                            dist = pc.get("distance", None)
-                            az = pc.get("azimuth", None)
-                            el = pc.get("elevation", None)
-                            if all(isinstance(x, np.ndarray) and x.size > 0 for x in [dist, az, el]):
-                                r = dist.astype(np.float32).ravel()
-                                a = az.astype(np.float32).ravel()
-                                e = el.astype(np.float32).ravel()
-                                valid = (r > 0) & np.isfinite(r) & np.isfinite(a) & np.isfinite(e)
-                                r, a, e = r[valid], a[valid], e[valid]
-                                if len(r) > 0:
-                                    cos_e = np.cos(e)
-                                    xyz = np.column_stack([r * cos_e * np.sin(a),
-                                                           r * cos_e * np.cos(a),
-                                                           r * np.sin(e)])
-                                    np.save(os.path.join(DATA_DIR,"point_cloud.npy"),
-                                            np.ascontiguousarray(xyz))
-                                    data["point_cloud"] = "point_cloud.npy"
-                except Exception as e:
-                    print(f"[DEBUG] lidar error: {e}")
-            jp = os.path.join(DATA_DIR,"data.json")
-            with open(jp,'w') as f:
-                json.dump(data,f)
-        except Exception as e:
-            print(f"[DEBUG] bridge pub_ros2_data error: {e}")
+        if self.step_count % 3:
+            return
+        robot = self.env.unwrapped.scene['unitree_go2']
+        rs = robot.data.root_state_w.detach().cpu().numpy()
+        d = {'timestamp':time.time(), 'frame':self.step_count//3, 'num_envs':len(rs),
+             'robots':rs.tolist(), 'odom':{'position':rs[0,:3].tolist(),
+             'orientation':rs[0,[4,5,6,3]].tolist(), 'frame_id':'odom', 'child_frame_id':'unitree_go2/base_link'}}
+        slot = (self.step_count//3) % 4
+        if self.cameras:
+            cam = self.cameras[0]
+            try:
+                rgb = cam.get_rgb()
+                depth = cam.get_depth()
+                if rgb is not None and rgb.size:
+                    name = f'color_{slot}.png'
+                    Image.fromarray(rgb.astype(np.uint8)).save(DATA_DIR/name)
+                    d['color_image'] = name
+                    d['intrinsics'] = cam.get_intrinsics_matrix().tolist()
+                if depth is not None and depth.size:
+                    name = f'depth_{slot}.npy'
+                    np.save(DATA_DIR/name, np.asarray(depth,dtype=np.float32))
+                    d['depth_image'] = name
+                    d['depth_encoding'] = '32FC1'
+                frame = cam.get_current_frame()
+                sem = frame.get('semantic_segmentation')
+                if isinstance(sem, dict) and np.asarray(sem.get('data',[])).size:
+                    name=f'semantic_{slot}.npy'
+                    np.save(DATA_DIR/name, sem['data'])
+                    d['semantic']=name
+                    d['semantic_labels']=sem.get('info',{})
+                # World-coordinate RGB-D point cloud, explicitly distinguished from LiDAR.
+                if depth is not None and depth.size:
+                    pts = cam.get_pointcloud(world_frame=True)
+                    if pts is not None and pts.size:
+                        name=f'rgbd_points_{slot}.npy'
+                        pts=np.asarray(pts).reshape(-1,3)
+                        pts=pts[np.isfinite(pts).all(axis=1)]
+                        np.save(DATA_DIR/name,pts)
+                        d['rgbd_point_cloud']=name
+            except Exception as e:
+                self.errors['camera']=str(e)
+        if self.lidar_annotators:
+            try:
+                pc=self.lidar_annotators[0].get_data()
+                pts=pc.get('data') if isinstance(pc,dict) else pc
+                if isinstance(pts,np.ndarray) and pts.ndim==2 and pts.shape[1]>=3 and len(pts):
+                    pts=pts[:,:3].astype(np.float32)
+                    pts=pts[np.isfinite(pts).all(axis=1)]
+                    name=f'lidar_{slot}.npy'
+                    np.save(DATA_DIR/name,pts)
+                    d['point_cloud']=name
+                    self.errors.pop('lidar_format',None)
+                elif isinstance(pc,dict):
+                    self.errors['lidar_format']=str({k:(getattr(v,'shape',type(v).__name__)) for k,v in pc.items()})
+            except Exception as e:
+                self.errors['lidar']=str(e)
+        d['errors']=self.errors
+        tmp=DATA_DIR/'data.json.tmp'
+        tmp.write_text(json.dumps(d))
+        tmp.replace(DATA_DIR/'data.json')
+        self.latest=d
 
     def destroy_node(self):
         pass

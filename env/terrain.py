@@ -35,7 +35,7 @@ def uniform_discrete_obstacles_terrain(difficulty: float, cfg) -> np.ndarray:
     obs_dist = cfg.obstacles_distance
     stop_sampling = False
     # generate the obstacles
-    obs_list = cfg.avoid_positions
+    obs_list = [list(pos) for pos in cfg.avoid_positions]
     for _ in range(cfg.num_obstacles):
         # sample size
         height = int(np.random.uniform(obs_height_min, obs_height_max) / cfg.vertical_scale)

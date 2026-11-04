@@ -1,0 +1,184 @@
+Loading user config located at: '/data/anaconda3/envs/isaacsim_510/lib/python3.11/site-packages/isaacsim/kit/data/Kit/Isaac-Sim/5.1/user.config.json'
+[Info] [carb] Logging to file: /data/anaconda3/envs/isaacsim_510/lib/python3.11/site-packages/isaacsim/kit/logs/Kit/Isaac-Sim/5.1/kit_20261104_174152.log
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.196.07    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA GeForce RTX 3090          | Yes: 0 |     | 24822   MB | 10de      | 0          |
+|     |                                  |        |     |            | 2204      | ac50bad9.. |
+|     |                                  |        |     |            | 21        |            |
+|=============================================================================================|
+| OS: 22.04.5 LTS (Jammy Jellyfish) ubuntu, Version: 22.04.5, Kernel: 6.8.0-138-generic
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101004 (1.21.1.4)
+| Processor: Intel(R) Xeon(R) Gold 6134 CPU @ 3.20GHz
+| Cores: 8 | Logical Cores: 16
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 47876 | Free Memory: 17980
+| Total Page/Swap (MB): 2047 | Free Page/Swap: 2020
+|---------------------------------------------------------------------------------------------|
+2026-11-04T09:41:55Z [3,215ms] [Warning] [gpu.foundation.plugin] CPU performance profile is set to powersave. This profile sets the CPU to the lowest frequency reducing performance.
+2026-11-04T09:41:58Z [5,702ms] [Warning] [omni.log] Source: omni.hydra was already registered.
+2026-11-04T09:41:59Z [6,891ms] [Warning] [carb] Acquiring non optional plugin interface which is not listed as dependency: [omni::physx::IPhysxBenchmarks v1.0] (plugin: <default plugin>), by client: omni.physics.physx.plugin. Add it to CARB_PLUGIN_IMPL_DEPS() macro of a client.
+2026-11-04T09:41:59Z [6,947ms] [Warning] [omni.isaac.dynamic_control] omni.isaac.dynamic_control is deprecated as of Isaac Sim 4.5. No action is needed from end-users.
+2026-11-04T09:42:07Z [15,420ms] [Warning] [pxr.Semantics] pxr.Semantics is deprecated - please use Semantics instead
+2026-11-04T09:42:08Z [15,785ms] [Warning] [omni.graph.core.plugin] Found duplicate of category 'Replicator' - was 'Annotators', adding 'Fabric Reader'
+2026-11-04T09:42:08Z [15,785ms] [Warning] [omni.graph.core.plugin] Category 'Replicator' not accepted on node type 'omni.replicator.core.FabricReader' in extension 'omni.replicator.core'
+2026-11-04T09:42:08Z [15,786ms] [Warning] [omni.replicator.core.scripts.extension] No material configuration file, adding configuration to material settings directly.
+2026-11-04T09:42:17Z [24,671ms] [Warning] [omni.kvdb.plugin] Disabling key-value database because another kit process is locking it
+[INFO][AppLauncher]: Using device: cuda:0
+[INFO][AppLauncher]: Loading experience file: /data/apps/IsaacLab-2.3.0-go2-opencode/apps/isaaclab.python.headless.rendering.kit
+2026-11-04T09:42:31Z [39,433ms] [Warning] [omni.fabric.plugin] Warning: attribute viewPickingId not found for bucket id 7
+
+2026-11-04T09:44:59Z [187,037ms] [Warning] [isaaclab.envs.manager_based_env] Seed not set for the environment. The environment creation may not be deterministic.
+2026-11-04T09:44:59Z [187,038ms] [Warning] [isaaclab.sim.simulation_context] The `disable_contact_processing` attribute is deprecated and always set to True to avoid unnecessary overhead. Contact processing is automatically enabled when a contact sensor is created, so manual configuration is no longer required.
+2026-11-04T09:45:06Z [194,606ms] [Warning] [isaaclab.envs.mdp.commands.velocity_command] The velocity command has the 'ranges.heading' attribute set to '(0, 0)' but the heading command is not active. Consider setting the flag for the heading command to True.
+2026-11-04T09:45:07Z [194,700ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:09Z [196,827ms] [Error] [omni.kit.commands.command] Can't execute command: "IsaacSensorCreateRtxLidar", it wasn't registered or ambigious.
+[INFO]: Base environment:
+	Environment device    : cuda:0
+	Environment seed      : None
+	Physics step-size     : 0.005
+	Rendering step-size   : 0.02
+	Environment step-size : 0.02
+[INFO]: Time taken for scene creation : 4.764213 seconds
+[INFO]: Scene manager:  <class InteractiveScene>
+	Number of environments: 1
+	Environment spacing   : 2.0
+	Source prim name      : /World/envs/env_0
+	Global prim paths     : []
+	Replicate physics     : True
+[INFO]: Starting the simulation. This may take a few seconds. Please wait...
+[INFO]: Time taken for simulation start : 1.988156 seconds
+[INFO] Command Manager:  <CommandManager> contains 1 active terms.
++-----------------------------------------------+
+|              Active Command Terms             |
++-------+--------------+------------------------+
+| Index | Name         |          Type          |
++-------+--------------+------------------------+
+|   0   | base_vel_cmd | UniformVelocityCommand |
++-------+--------------+------------------------+
+
+[INFO] Event Manager:  <EventManager> contains 0 active terms.
+
+[INFO] Recorder Manager:  <RecorderManager> contains 0 active terms.
++---------------------+
+| Active Recorder Terms |
++-----------+---------+
+|   Index   | Name    |
++-----------+---------+
++-----------+---------+
+
+[INFO] Action Manager:  <ActionManager> contains 1 active terms.
++------------------------------------+
+|  Active Action Terms (shape: 12)   |
++--------+-------------+-------------+
+| Index  | Name        |   Dimension |
++--------+-------------+-------------+
+|   0    | joint_pos   |          12 |
++--------+-------------+-------------+
+
+[INFO] Observation Manager: <ObservationManager> contains 1 groups.
++----------------------------------------------------------+
+| Active Observation Terms in Group: 'policy' (shape: (235,)) |
++-----------+--------------------------------+-------------+
+|   Index   | Name                           |    Shape    |
++-----------+--------------------------------+-------------+
+|     0     | base_lin_vel                   |     (3,)    |
+|     1     | base_ang_vel                   |     (3,)    |
+|     2     | projected_gravity              |     (3,)    |
+|     3     | base_vel_cmd                   |     (3,)    |
+|     4     | joint_pos                      |    (12,)    |
+|     5     | joint_vel                      |    (12,)    |
+|     6     | actions                        |    (12,)    |
+|     7     | height_scan                    |    (187,)   |
++-----------+--------------------------------+-------------+
+
+[INFO] Termination Manager:  <TerminationManager> contains 0 active terms.
++----------------------------+
+|  Active Termination Terms  |
++--------+-------+-----------+
+| Index  | Name  |  Time Out |
++--------+-------+-----------+
++--------+-------+-----------+
+
+[INFO] Reward Manager:  <RewardManager> contains 0 active terms.
++-----------------------+
+|  Active Reward Terms  |
++-------+------+--------+
+| Index | Name | Weight |
++-------+------+--------+
++-------+------+--------+
+
+[INFO] Curriculum Manager:  <CurriculumManager> contains 0 active terms.
++----------------------+
+| Active Curriculum Terms |
++-----------+----------+
+|   Index   | Name     |
++-----------+----------+
++-----------+----------+
+
+[INFO]: Completed setting up the environment...
+[INFO] Generating terrains randomly took : 0.266904 seconds
+[WARN] LiDAR annotator for env 0 failed: No annotator of name IsaacCreateRTXLidarScanBuffer registered. Available annotators: ['camera_params', 'rgb', 'normals', 'motion_vectors', 'cross_correspondence', 'occlusion', 'distance_to_image_plane', 'distance_to_camera', 'LdrColor', 'HdrColor', 'RtxSensorCpu', 'RtxSensorGpu', 'GenericModelOutput', 'DepthSensorDistance', 'DepthSensorPointCloudPosition', 'DepthSensorPointCloudColor', 'DepthSensorImager', 'RtxSensorMetadata', 'SemanticOcclusionSD', 'InstanceIdSegmentationReductionSD', 'InstanceSegmentationReductionSD', 'UniqueInstanceSegmentationIdsSD', 'CrossCorrespondence', 'MotionVectors', 'SmoothNormal', 'BumpNormal', 'AmbientOcclusion', 'Motion2d', 'DiffuseAlbedo', 'SpecularAlbedo', 'Roughness', 'DirectDiffuse', 'DirectSpecular', 'Reflections', 'IndirectDiffuse', 'DepthLinearized', 'EmissionAndForegroundMask', 'PtDirectIllumation', 'PtGlobalIllumination', 'PtReflections', 'PtRefractions', 'PtSelfIllumination', 'PtBackground', 'PtWorldNormal', 'PtWorldPos', 'PtZDepth', 'PtVolumes', 'PtDiffuseFilter', 'PtReflectionFilter', 'PtRefractionFilter', 'PtMultiMatte0', 'PtMultiMatte1', 'PtMultiMatte2', 'PtMultiMatte3', 'PtMultiMatte4', 'PtMultiMatte5', 'PtMultiMatte6', 'PtMultiMatte7', 'SemanticBoundingBox2DTight', 'SemanticBoundingBox2DLoose', 'SemanticBoundingBox3D', 'SemanticIdMap', 'StableIdMap', 'StableIdSemanticIdMap', 'StableIdMapDeltas', 'SemanticIdMapDeltas', 'SemanticSegmentation', 'SemanticInstanceSegmentation', 'StableIdSegmentation', 'rpFabricTime', 'fabricTime', 'primPaths', 'bounding_box_2d_tight_fast', 'bounding_box_2d_tight', 'bounding_box_2d_loose_fast', 'bounding_box_2d_loose', 'bounding_box_3d_360', 'bounding_box_3d_fast', 'bounding_box_3d', 'instance_segmentation_fast', 'instance_segmentation', 'semantic_segmentation', 'CameraParamsOpenCVPR', 'CameraParamsOpenCV', 'CameraParams', 'skeleton_attributes_pr', 'skeleton_attributes', 'skeleton_data', 'pointcloud', 'Attribute', 'shaded_instance_id_segmentation', 'shaded_instance_segmentation', 'shaded_semantic_segmentation']
+[WARN] Camera sensors not available in this configuration
+[INFO] 1 Go2 robots spawned
+[INFO] Press 1/2/3 or F1/F2/F3 to select robot, WASDZC to control
+[INFO]       1-9 or F1-F9 select robots 0-8
+[INFO]       W:Fwd A:Left S:Back D:Right Z:LeftTurn C:RightTurn
+Step time: 459.92ms, Real Time Factor: 0.04Step time: 40.22ms, Real Time Factor: 0.50Step time: 20.55ms, Real Time Factor: 0.97Step time: 23.43ms, Real Time Factor: 0.85Step time: 20.07ms, Real Time Factor: 1.00Step time: 20.04ms, Real Time Factor: 1.00Step time: 21.25ms, Real Time Factor: 0.94Step time: 21.80ms, Real Time Factor: 0.92Step time: 21.46ms, Real Time Factor: 0.93Step time: 23.45ms, Real Time Factor: 0.85Step time: 22.56ms, Real Time Factor: 0.89Step time: 24.54ms, Real Time Factor: 0.82Step time: 21.38ms, Real Time Factor: 0.94Step time: 20.09ms, Real Time Factor: 1.00Step time: 20.97ms, Real Time Factor: 0.95Step time: 23.04ms, Real Time Factor: 0.87Step time: 23.14ms, Real Time Factor: 0.87Step time: 25.66ms, Real Time Factor: 0.78Step time: 21.55ms, Real Time Factor: 0.93Step time: 24.44ms, Real Time Factor: 0.82Step time: 23.66ms, Real Time Factor: 0.85Step time: 25.75ms, Real Time Factor: 0.78Step time: 24.49ms, Real Time Factor: 0.82Step time: 26.15ms, Real Time Factor: 0.76Step time: 32.89ms, Real Time Factor: 0.61Step time: 39.04ms, Real Time Factor: 0.51Step time: 41.16ms, Real Time Factor: 0.492026-11-04T09:45:09Z [196,874ms] [Warning] [omni.physx.fabric.plugin] FabricManager::initializePointInstancer mismatched prototypes on point instancer: /Visuals/Command/velocity_goal.
+2026-11-04T09:45:09Z [196,874ms] [Warning] [omni.physx.fabric.plugin] FabricManager::initializePointInstancer mismatched prototypes on point instancer: /Visuals/Command/velocity_current.
+2026-11-04T09:45:09Z [196,876ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:09Z [197,592ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,652ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,690ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,735ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,781ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,827ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,869ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,914ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [197,961ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,010ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,059ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,109ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,182ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,259ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+Step time: 35.79ms, Real Time Factor: 0.56Step time: 26.61ms, Real Time Factor: 0.75Step time: 35.69ms, Real Time Factor: 0.56Step time: 29.01ms, Real Time Factor: 0.69Step time: 34.26ms, Real Time Factor: 0.58Step time: 32.40ms, Real Time Factor: 0.62Step time: 30.20ms, Real Time Factor: 0.66Step time: 26.15ms, Real Time Factor: 0.77Step time: 25.35ms, Real Time Factor: 0.79Step time: 22.40ms, Real Time Factor: 0.89Step time: 27.31ms, Real Time Factor: 0.73Step time: 27.63ms, Real Time Factor: 0.72Step time: 27.26ms, Real Time Factor: 0.73Step time: 24.43ms, Real Time Factor: 0.82Step time: 25.31ms, Real Time Factor: 0.79Step time: 22.48ms, Real Time Factor: 0.89Step time: 21.10ms, Real Time Factor: 0.95Step time: 23.90ms, Real Time Factor: 0.84Step time: 24.42ms, Real Time Factor: 0.82Step time: 22.86ms, Real Time Factor: 0.88Step time: 25.64ms, Real Time Factor: 0.78Step time: 23.78ms, Real Time Factor: 0.84Step time: 26.25ms, Real Time Factor: 0.76Step time: 23.67ms, Real Time Factor: 0.85Step time: 28.68ms, Real Time Factor: 0.70Step time: 25.49ms, Real Time Factor: 0.79Step time: 24.59ms, Real Time Factor: 0.81Step time: 21.93ms, Real Time Factor: 0.91Step time: 24.13ms, Real Time Factor: 0.83Step time: 22.69ms, Real Time Factor: 0.88Step time: 23.97ms, Real Time Factor: 0.83Step time: 21.19ms, Real Time Factor: 0.94Step time: 24.18ms, Real Time Factor: 0.83Step time: 23.87ms, Real Time Factor: 0.842026-11-04T09:45:10Z [198,318ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,384ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,448ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,498ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,549ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:10Z [198,605ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,653ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,699ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,748ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,795ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,848ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,900ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,950ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [198,996ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,044ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,089ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,139ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+Step time: 25.45ms, Real Time Factor: 0.79Step time: 23.38ms, Real Time Factor: 0.86Step time: 22.69ms, Real Time Factor: 0.88Step time: 23.43ms, Real Time Factor: 0.85Step time: 24.50ms, Real Time Factor: 0.82Step time: 20.08ms, Real Time Factor: 1.00Step time: 26.28ms, Real Time Factor: 0.76Step time: 39.10ms, Real Time Factor: 0.51Step time: 31.51ms, Real Time Factor: 0.64Step time: 28.00ms, Real Time Factor: 0.71Step time: 41.65ms, Real Time Factor: 0.48Step time: 27.96ms, Real Time Factor: 0.72Step time: 39.06ms, Real Time Factor: 0.51Step time: 29.13ms, Real Time Factor: 0.69Step time: 25.08ms, Real Time Factor: 0.80Step time: 23.04ms, Real Time Factor: 0.87Step time: 28.16ms, Real Time Factor: 0.71Step time: 32.75ms, Real Time Factor: 0.61Step time: 28.79ms, Real Time Factor: 0.70Step time: 48.35ms, Real Time Factor: 0.41Step time: 41.15ms, Real Time Factor: 0.49Step time: 23.33ms, Real Time Factor: 0.86Step time: 26.82ms, Real Time Factor: 0.75Step time: 22.54ms, Real Time Factor: 0.89Step time: 24.02ms, Real Time Factor: 0.83Step time: 24.05ms, Real Time Factor: 0.83Step time: 24.76ms, Real Time Factor: 0.81Step time: 21.73ms, Real Time Factor: 0.92Step time: 23.36ms, Real Time Factor: 0.86Step time: 21.60ms, Real Time Factor: 0.93Step time: 24.11ms, Real Time Factor: 0.83Step time: 23.58ms, Real Time Factor: 0.85Step time: 25.23ms, Real Time Factor: 0.79Step time: 22.15ms, Real Time Factor: 0.902026-11-04T09:45:11Z [199,186ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,231ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,280ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,351ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,420ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,488ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,543ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:11Z [199,593ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [199,655ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [199,746ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [199,795ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [199,843ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [199,892ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [199,936ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [199,983ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [200,033ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [200,079ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+Step time: 26.49ms, Real Time Factor: 0.76Step time: 22.39ms, Real Time Factor: 0.89Step time: 24.10ms, Real Time Factor: 0.83Step time: 23.19ms, Real Time Factor: 0.862026-11-04T09:45:12Z [200,128ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.
+2026-11-04T09:45:12Z [200,177ms] [Warning] [isaaclab.sensors.ray_caster.ray_caster] Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release. Please use the parameter 'ray_alignment' instead. Setting ray_alignment to 'yaw'.

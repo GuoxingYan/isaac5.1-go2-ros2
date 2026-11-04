@@ -1,0 +1,17 @@
+[SCENE] obstacle-sparse
+[SCENE EXIT] obstacle-sparse 0
+[SCENE] obstacle-medium
+[SCENE EXIT] obstacle-medium 0
+[SCENE] obstacle-dense
+[SCENE EXIT] obstacle-dense 0
+[SCENE] warehouse
+[SCENE EXIT] warehouse 0
+[SCENE] warehouse-forklifts
+[SCENE EXIT] warehouse-forklifts 0
+[SCENE] warehouse-shelves
+[SCENE EXIT] warehouse-shelves 0
+[SCENE] full-warehouse
+./scripts/validate_scenes.sh: 第 5 行： 177822 已杀死               GO2_DATA_DIR="$PWD/outputs/scene-bridge" timeout -k 5 150 ./run_go2.sh --headless --max-steps 30 --report-dir "reports/scenes/$scene" sensor.enable_lidar=False sensor.enable_camera=False "env_name=$scene" > "reports/scenes/$scene.log" 2>&1
+[SCENE EXIT] full-warehouse 137
+./scripts/validate_scenes.sh: 行 15: 寻找匹配的 `"' 时遇到了未预期的 EOF
+./scripts/validate_scenes.sh: 行 17: 语法错误：未预期的文件结束符
