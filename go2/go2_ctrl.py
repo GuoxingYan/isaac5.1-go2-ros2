@@ -10,6 +10,7 @@ import isaaclab_tasks  # Registers the Gym task IDs.
 base_vel_cmd_input = None
 selected_robot = 0
 ros_commands = {}
+linear_speed=1.0
 
 def init_base_vel_cmd(num_envs):
     global base_vel_cmd_input
@@ -70,7 +71,7 @@ def sub_keyboard_event(event) -> bool:
             if key not in pressed_keys:
                 return True
             pressed_keys.discard(key)
-        command = [sum(movement[k][i] for k in pressed_keys)*1.0 for i in range(3)]
+        command = [sum(movement[k][i] for k in pressed_keys)*(linear_speed if i<2 else 1.0) for i in range(3)]
         base_vel_cmd_input[selected_robot] = torch.tensor(command, dtype=torch.float32)
     if key == "SPACE" and kind == carb.input.KeyboardEventType.KEY_PRESS:
         ros_commands.clear()

@@ -1,0 +1,8 @@
+{
+  "name": "ROS2 MID360 IMU transport continuous 200Hz",
+  "pass": true,
+  "samples": 2404,
+  "received_simulated_hz": 200.0000044610904,
+  "maximum_gap_s": 0.005000000000000782,
+  "evidence_source": "ros_topics.json: actual received sensor_msgs/Imu header timestamps, latest simulation epoch"
+}

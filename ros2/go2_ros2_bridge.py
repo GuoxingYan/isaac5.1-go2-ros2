@@ -55,6 +55,8 @@ class RobotDataManager:
              'robots':rs.tolist(), 'odom':{'position':rs[0,:3].tolist(),
              'orientation':rs[0,[4,5,6,3]].tolist(), 'frame_id':'odom', 'child_frame_id':'unitree_go2/base_link'}}
         d['sensor_profile']=PROFILE
+        if hasattr(self,'interior_scene'):
+            d['scene_sources']=self.interior_scene.evidence
         sim_time=d['simulation_time']
         slot = self.step_count % 8
         d.update(self.previous_sensor_data)
@@ -72,6 +74,12 @@ class RobotDataManager:
                     d['intrinsics'] = cam.get_intrinsics_matrix().tolist()
                     d['depth_intrinsics'] = cam.get_depth_intrinsics_matrix().tolist()
                     d['camera_time']=sim_time
+                    def pose(camera):
+                        position,quaternion=camera.get_world_pose(camera_axes='ros')
+                        def array(x):return x.detach().cpu().numpy().tolist() if hasattr(x,'detach') else np.asarray(x).tolist()
+                        return {'position':array(position),'quaternion_wxyz':array(quaternion)}
+                    d['depth_pose']=pose(cam.depth_camera)
+                    d['camera_pose']=pose(cam.rgb_camera)
                     self.camera_history.append(sim_time)
                 if depth is not None and depth.size:
                     name = f'depth_{slot}.npy'
@@ -111,6 +119,9 @@ class RobotDataManager:
                     np.save(DATA_DIR/name,pts)
                     d['point_cloud']=name
                     d['lidar_time']=sim_time
+                    from scipy.spatial.transform import Rotation
+                    rotation=Rotation.from_quat(rs[0,[4,5,6,3]])
+                    d['lidar_pose']={'position':(rs[0,:3]+rotation.apply(PROFILE['lidar']['position'])).tolist(),'quaternion_wxyz':rs[0,3:7].tolist()}
                     self.lidar_history.append(sim_time)
                     if isinstance(pc,dict):
                         aux={}
@@ -136,7 +147,7 @@ class RobotDataManager:
                     self.last_imu_time[index]=sample['time']
             d['imu_samples']=[s for s in self.sensor_manager.imu_samples if s['time']>sim_time-1.0]
             self.imu_history.extend(fresh)
-        self.previous_sensor_data={k:v for k,v in d.items() if k in ['color_image','intrinsics','depth_intrinsics','camera_time','depth_image','depth_encoding','semantic','semantic_labels','rgbd_point_cloud','point_cloud','lidar_time','lidar_aux']}
+        self.previous_sensor_data={k:v for k,v in d.items() if k in ['color_image','intrinsics','depth_intrinsics','camera_time','depth_image','depth_encoding','semantic','semantic_labels','rgbd_point_cloud','point_cloud','lidar_time','lidar_aux','camera_pose','depth_pose','lidar_pose']}
         d['errors']=self.errors
         tmp=DATA_DIR/'data.json.tmp'
         tmp.write_text(json.dumps(d))

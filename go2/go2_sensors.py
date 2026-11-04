@@ -30,10 +30,17 @@ class D435Rig:
         self.last_capture_time = -1.
 
     def get_rgb(self):
+        if hasattr(self,'gaussian_renderer'):
+            pos,quat=self.rgb_camera.get_world_pose(camera_axes='ros')
+            image=self.gaussian_renderer.render(_numpy(pos),_numpy(quat),self.get_intrinsics_matrix(),PROFILE['camera']['rgb_resolution'])
+            if hasattr(self,'rgb_display'):
+                rgba=np.dstack([image,np.full(image.shape[:2],255,dtype=np.uint8)])
+                self.rgb_display.set_bytes_data(rgba.ravel().tolist(),[image.shape[1],image.shape[0]])
+            return image
         return self.rgb_camera.get_rgb()
 
     def get_depth(self):
-        depth = self.depth_camera.get_depth()
+        depth = self.depth_provider.get_depth() if hasattr(self,'depth_provider') else self.depth_camera.get_depth()
         if depth is None:
             return None
         depth = np.asarray(depth,dtype=np.float32).copy()
@@ -48,7 +55,7 @@ class D435Rig:
         return _numpy(self.depth_camera.get_intrinsics_matrix())
 
     def get_current_frame(self):
-        return self.depth_camera.get_current_frame()
+        return {} if hasattr(self,'depth_provider') else self.depth_camera.get_current_frame()
 
     def get_pointcloud(self, world_frame=True):
         """由已截断的米制深度反投影，避免将 10 米外几何混入 D435 点云。"""
@@ -91,7 +98,7 @@ class SensorManager:
         write_mid360_usda(path)
         annotators=[]
         for i in range(self.num_envs):
-            prim=add_reference_to_stage(str(path),f'/World/envs/env_{i}/Go2/base/lidar',prim_type='OmniLidar')
+            prim=add_reference_to_stage(str(path),f'/World/OurSensors/env_{i}/lidar',prim_type='OmniLidar')
             reset_and_set_xform_ops(prim.GetPrim(),Gf.Vec3d(*PROFILE['lidar']['position']),Gf.Quatd(1,0,0,0))
             self.lidar_prims.append(prim.GetPrim())
             texture=rep.create.render_product(prim.GetPath(),[32,32],name=f'MID360_{i}',render_vars=['GenericModelOutput','RtxSensorMetadata'])
@@ -114,7 +121,39 @@ class SensorManager:
             prim.GetAttribute('omni:sensor:Core:emitterState:s001:elevationDeg').Set(Vt.FloatArray.FromNumpy(el))
 
     def add_camera(self,freq):
-        return [D435Rig(f'/World/envs/env_{i}/Go2/base') for i in range(self.num_envs)]
+        self.cameras=[D435Rig(f'/World/OurSensors/env_{i}') for i in range(self.num_envs)]
+        return self.cameras
+
+    def bind_pose_updates(self,env):
+        """每次渲染前从物理根节点读取位姿，避免 USD 初始位姿被外部渲染器误用。"""
+        self.env=env
+        sim=env.unwrapped.sim
+        original=sim.render
+        self.original_render=original
+        def render_with_sensor_pose(*args,**kwargs):
+            self.sync_poses()
+            return original(*args,**kwargs)
+        sim.render=render_with_sensor_pose
+        self.sync_poses()
+
+    def sync_poses(self):
+        from scipy.spatial.transform import Rotation
+        robot=self.env.unwrapped.scene['unitree_go2']
+        transforms=robot.root_physx_view.get_root_transforms().detach().cpu().numpy()
+        for i,state in enumerate(transforms):
+            rotation=Rotation.from_quat(state[3:7])
+            if hasattr(self,'cameras'):
+                camera_rotation=rotation*Rotation.from_euler('xyz',PROFILE['camera']['rpy_deg'],degrees=True)
+                q=camera_rotation.as_quat()[[3,0,1,2]]
+                pos=state[:3]+rotation.apply(PROFILE['camera']['position'])
+                for camera in [self.cameras[i].rgb_camera,self.cameras[i].depth_camera]:
+                    camera.set_world_pose(position=pos.astype(np.float32),orientation=q.astype(np.float32),camera_axes='world')
+            if i<len(self.lidar_prims):
+                lidar_rotation=rotation*Rotation.from_euler('xyz',PROFILE['lidar']['rpy_deg'],degrees=True)
+                q=lidar_rotation.as_quat()[[3,0,1,2]]
+                pos=state[:3]+rotation.apply(PROFILE['lidar']['position'])
+                self.lidar_prims[i].GetAttribute('xformOp:translate').Set(Gf.Vec3d(*pos.tolist()))
+                self.lidar_prims[i].GetAttribute('xformOp:orient').Set(Gf.Quatd(float(q[0]),Gf.Vec3d(*q[1:].tolist())))
 
     def add_imu(self,env):
         self.imu=env.unwrapped.scene['mid360_imu']
@@ -136,3 +175,9 @@ class SensorManager:
             self.imu_samples.append({'robot':i,'time':stamp,'linear_acceleration':acceleration[i].tolist(),
                 'angular_velocity':angular[i].tolist(),'frame_id':'unitree_go2/mid360_imu'})
         self.imu_samples=self.imu_samples[-20000:]
+
+    def close(self):
+        if hasattr(self,'original_render'):
+            self.env.unwrapped.sim.render=self.original_render
+        if hasattr(self,'sim'):
+            self.sim.remove_physics_callback('mid360_imu_200hz')

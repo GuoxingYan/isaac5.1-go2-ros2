@@ -1,0 +1,57 @@
+{
+  "scene": "interiorgs",
+  "num_envs": 1,
+  "policy": "flat",
+  "steps": 100,
+  "control_checks": [
+    {
+      "name": "combo release preserves held W",
+      "pass": true
+    },
+    {
+      "name": "SPACE stops all robots",
+      "pass": true
+    },
+    {
+      "name": "robot 0 RGBD",
+      "pass": true
+    },
+    {
+      "name": "all cameras created",
+      "pass": true
+    },
+    {
+      "name": "robot 0 MID360 mesh rays",
+      "pass": true
+    },
+    {
+      "name": "all LiDARs created",
+      "pass": true
+    },
+    {
+      "name": "MID360 IMU 200Hz samples",
+      "pass": true,
+      "samples": 400,
+      "simulation_hz": 200.00000447034847
+    }
+  ],
+  "root_states": [
+    [
+      1.0803942680358887,
+      -9.325410842895508,
+      0.29163214564323425,
+      0.48511186242103577,
+      -0.03637908771634102,
+      -0.0171087384223938,
+      0.8735275268554688,
+      -0.004295920953154564,
+      -0.0051507726311683655,
+      0.007560226134955883,
+      -0.023845136165618896,
+      0.021488644182682037,
+      0.019859973341226578
+    ]
+  ],
+  "warehouse_meshes": 0,
+  "pass": true
+}

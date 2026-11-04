@@ -12,7 +12,7 @@ def build(directory):
     directory=Path(directory)
     d=json.loads((directory/'results.json').read_text())
     plots=[]
-    for key,title in [('depth_image','Depth · metres'),('point_cloud','RTX LiDAR · sensor frame'),('rgbd_point_cloud','RGB-D cloud · world frame'),('semantic','Semantic IDs')]:
+    for key,title in [('depth_image','Depth · metres'),('point_cloud','MID360 · sensor frame'),('rgbd_point_cloud','RGB-D cloud · world frame'),('semantic','Semantic IDs')]:
         name=d['snapshots'].get(key)
         if not name:
             continue
@@ -41,6 +41,8 @@ def build(directory):
         plots.insert(0,('D435 RGB · separate color optical frame',directory/d['snapshots']['color_image']))
     if (directory/'simulation_view.png').exists():
         plots.insert(0,('Go2 simulation viewport',directory/'simulation_view.png'))
+    if (directory/'gui_gaussian_window.png').exists():
+        plots.append(('Actual Isaac GUI with live D435 Gaussian RGB window',directory/'gui_gaussian_window.png'))
     multi=directory.parent/'scenes'/'multi-sensors'/'simulation_view.png'
     if multi.exists() and not d.get("sensor_profile"):
         plots.append(('Three Go2 robots · RGBD + RTX LiDAR verified on all robots',multi))
@@ -55,6 +57,40 @@ def build(directory):
         for ax in axes: ax.legend();ax.grid(alpha=.2)
         out=directory/'imu.png';fig.tight_layout();fig.savefig(out,dpi=120);plt.close(fig)
         plots.append(('MID360 IMU · gravity + motion response',out))
+    spawn_section=''
+    scene_path=directory/'scene_evidence.json'
+    if scene_path.exists():
+        scene=json.loads(scene_path.read_text())
+        from env.interiorgs_scene import InteriorGSScene
+        layout=InteriorGSScene('data',scene['spawn']['seed'],scene['spawn']['required_clearance_m'])
+        track=np.asarray(d['trajectory'])
+        xy=np.array([layout.world_to_pixel(s[1],s[2]) for s in track])
+        fig,ax=plt.subplots(figsize=(7,9))
+        ax.imshow(layout.image,cmap='gray',origin='lower',vmin=0,vmax=255)
+        ax.plot(xy[:,1],xy[:,0],color='tab:red',linewidth=1.5,label='measured robot trajectory')
+        r,c=scene['spawn']['pixel_row_col'];ax.scatter(c,r,marker='*',s=120,color='tab:blue',label='occupancy-sampled spawn')
+        ax.set(xlabel='map column (X flipped)',ylabel='map row (+world Y)',title='Occupancy + mesh clearance + actual Go2 trajectory');ax.legend()
+        out=directory/'occupancy_trajectory.png';fig.tight_layout();fig.savefig(out,dpi=120);plt.close(fig)
+        plots.append(('Occupancy random spawn and measured path · 0.05 m/pixel',out))
+        for key in ['W','S','A','D','Z','C']:
+            path=directory/f'movement_{key}_rgb.png'
+            if path.exists(): plots.append((f'{key} · actual USDZ Gaussian RGB after keyboard movement',path))
+    if scene_path.exists():
+        sweep=directory/'spawn_sweep.json'
+        if sweep.exists():
+            summary=json.loads(sweep.read_text())
+            summary.pop('samples',None)
+            spawn_section='<h2>随机出生补充核验</h2><pre>'+html.escape(json.dumps(summary,ensure_ascii=False,indent=2))+'</pre>'
+        for seed in [7,123]:
+            folder=directory.parent/f'interiorgs-seed{seed}'
+            smoke=folder/'smoke.json'
+            if smoke.exists():
+                evidence=json.loads(smoke.read_text())
+                spawn_section+=f'<h3>Seed {seed} · {"PASS" if evidence["pass"] else "FAIL"}</h3><pre>'+html.escape(json.dumps(evidence,ensure_ascii=False,indent=2))+'</pre>'
+                viewport=folder/'simulation_view.png'
+                if viewport.exists(): plots.insert(0,(f'Seed {seed} · Go2 on actual collision mesh',viewport))
+                picture=folder/'scene_rgb.png'
+                if picture.exists(): plots.append((f'Seed {seed} · independent physical spawn Gaussian RGB',picture))
     trajectory=np.asarray(d['trajectory'])
     fig,ax=plt.subplots(figsize=(9,5));ax.plot(trajectory[:,1],trajectory[:,2]);ax.set(xlabel='World X (m)',ylabel='World Y (m)',title='Measured Go2 trajectory');ax.axis('equal');ax.grid(alpha=.3)
     out=directory/'trajectory.png';fig.savefig(out,dpi=120);plt.close(fig);plots.append(('Measured trajectory',out))
@@ -82,9 +118,14 @@ def build(directory):
     hardware=''
     if d.get('sensor_profile'):
         profile=d['sensor_profile']
-        hardware='<h2>Our Go2 · D435 / MID360 / MID360 IMU</h2><p>外参沿用原安装位置，尚未实机标定。D435 是独立彩色/深度视场的理想几何模型；MID360 使用 RTX 真实场景求交和程序化扫描覆盖近似，非厂商专有扫描轨迹；IMU 为同位置物理采样，无硬件噪声标定，不发布虚构姿态。主分支使用通用相机与 Example_Rotary，未配置独立 IMU。</p><pre>'+html.escape(json.dumps(profile,ensure_ascii=False,indent=2))+'</pre>'
+        hardware='<h2>Our Go2 · D435 / MID360 / MID360 IMU</h2><p>外参沿用原安装位置，尚未实机标定。D435 是独立彩色/深度视场的理想几何模型；MID360 使用真实场景三角形求交和程序化扫描覆盖近似，非厂商专有扫描轨迹；IMU 为同位置物理采样，无硬件噪声标定，不发布虚构姿态。主分支使用通用相机与 Example_Rotary，未配置独立 IMU。</p><pre>'+html.escape(json.dumps(profile,ensure_ascii=False,indent=2))+'</pre>'
+    if scene_path.exists():
+        hardware+='<h2>InteriorGS · RGB / metric geometry separation</h2><p>RGB直接解码839873.usdz内NuRec高斯及SH3系数并用gsplat渲染；mesh供CUDA三角形射线深度/LiDAR及PhysX碰撞使用，无高斯几何或合成地板混入metric场景。所有安装位姿与地图坐标使用同一米制Z-up原始坐标系。高斯图像不叠加机器人mesh；当前mesh深度/LiDAR亦未包含机器人自身遮挡。未建模硬件噪声、反射率与扫描运动畸变，采样率使用模拟时间。</p><pre>'+html.escape(scene_path.read_text())+'</pre>'
+    acquisition='RGB来自USDZ内真实高斯的gsplat渲染；深度与LiDAR来自碰撞mesh的Warp CUDA射线求交，物理碰撞由PhysX处理。' if scene_path.exists() else '图像与点云来自本次实际RTX传感器采集。'
+    notes=directory/'VALIDATED.md'
+    validation_notes='<h2>验收范围与限制</h2><pre>'+html.escape(notes.read_text())+'</pre>' if notes.exists() else ''
     scene_section=f'<h2>场景与多机器人验收 · {scene_pass}/{len(expected)}</h2><table>{scene_rows}</table>' if expected else ''
-    page=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Go2 Ubuntu 22.04 验证报告</title><style>body{{font:16px system-ui;background:#101827;color:#e2e8f0;margin:40px auto;max-width:1400px;padding:20px}}h1{{font-size:36px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:24px}}figure{{margin:0;background:#1e293b;padding:16px;border-radius:12px}}img{{width:100%;border-radius:8px}}figcaption{{padding:12px}}table{{width:100%;border-collapse:collapse}}td,th{{padding:12px;text-align:left;border-bottom:1px solid #334155}}pre{{white-space:pre-wrap;word-break:break-word;max-width:800px}}.pass{{color:#4ade80}}.fail{{color:#fb7185}}</style><h1>Go2 · Ubuntu 22.04 工作站仿真验证</h1><p>Isaac Sim 5.1 · conda isaacsim_510 · RTX 3090 · {count}/{len(d['results'])} checks passed · {d['elapsed_s']:.1f}s wall time · average RTF {average_rtf:.2f}</p><p>图像与点云均来自本次实际 RTX 传感器采集。键盘 callback 注入和 OS 窗口键盘输入分别验收；未执行项目不视为通过。</p><div class="grid">{cards}</div>{hardware}<h2>验收记录</h2><table><tr><th>功能</th><th>结果</th><th>证据</th></tr>{rows}</table>{scene_section}<h2>运行环境</h2><pre>{environment}</pre><h2>传感器诊断</h2><pre>{html.escape(json.dumps(d['sensor_errors'],ensure_ascii=False,indent=2))}</pre></html>'''
+    page=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Go2 Ubuntu 22.04 验证报告</title><style>body{{font:16px system-ui;background:#101827;color:#e2e8f0;margin:40px auto;max-width:1400px;padding:20px}}h1{{font-size:36px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:24px}}figure{{margin:0;background:#1e293b;padding:16px;border-radius:12px}}img{{width:100%;border-radius:8px}}figcaption{{padding:12px}}table{{width:100%;border-collapse:collapse}}td,th{{padding:12px;text-align:left;border-bottom:1px solid #334155}}pre{{white-space:pre-wrap;word-break:break-word;max-width:800px}}.pass{{color:#4ade80}}.fail{{color:#fb7185}}</style><h1>Go2 · Ubuntu 22.04 工作站仿真验证</h1><p>Isaac Sim 5.1 · conda isaacsim_510 · RTX 3090 · {count}/{len(d['results'])} checks passed · {d['elapsed_s']:.1f}s wall time · average RTF {average_rtf:.2f}</p><p>{acquisition}键盘 callback 注入和 OS 窗口键盘输入分别验收；未执行项目不视为通过。</p><div class="grid">{cards}</div>{hardware}<h2>验收记录</h2><table><tr><th>功能</th><th>结果</th><th>证据</th></tr>{rows}</table>{scene_section}{spawn_section}{validation_notes}<h2>运行环境</h2><pre>{environment}</pre><h2>传感器诊断</h2><pre>{html.escape(json.dumps(d['sensor_errors'],ensure_ascii=False,indent=2))}</pre></html>'''
     (directory/'report.html').write_text(page, encoding='utf-8')
     print('REPORT:',directory/'report.html',flush=True)
 

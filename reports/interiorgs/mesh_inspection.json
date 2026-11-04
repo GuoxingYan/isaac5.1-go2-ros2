@@ -1,0 +1,48 @@
+{
+  "mesh_count": 60,
+  "vertices": 219824,
+  "triangles": 437915,
+  "bounds": [
+    [
+      -0.11999999731779099,
+      -11.4399995803833,
+      -0.11999999731779099
+    ],
+    [
+      6.536999702453613,
+      0.11999999731779099,
+      2.8010001182556152
+    ]
+  ],
+  "occupancy_mapping_checks": [
+    {
+      "flip_x": false,
+      "flip_y": false,
+      "occupied_precision": 0.7038402457757297,
+      "free_conflict": 0.2603927752293578
+    },
+    {
+      "flip_x": false,
+      "flip_y": true,
+      "occupied_precision": 0.6544072481572482,
+      "free_conflict": 0.283615252293578
+    },
+    {
+      "flip_x": true,
+      "flip_y": false,
+      "occupied_precision": 0.9491668586347232,
+      "free_conflict": 0.03540711009174312
+    },
+    {
+      "flip_x": true,
+      "flip_y": true,
+      "occupied_precision": 0.8011821601289629,
+      "free_conflict": 0.13725630733944955
+    }
+  ],
+  "source_sha256": {
+    "839873_collision.usd": "26740ececdf1bf7ea2b597c50a5c72f2b2677b598d6f35fa8ac548f35871deaa",
+    "occupancy.png": "0972b2a1c62d5a96a91836ca5183998345304497f5b60f2875c5295c841914a5",
+    "occupancy.json": "16681a767c55ea429f29c54e9a91e626545585aa63880d0f12fe2fd2fd70272f"
+  }
+}

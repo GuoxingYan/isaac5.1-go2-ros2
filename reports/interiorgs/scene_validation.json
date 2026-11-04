@@ -1,0 +1,105 @@
+[
+  {
+    "name": "InteriorGS Gaussian source comes from requested USDZ",
+    "pass": true,
+    "source": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/839873.usdz",
+    "member": "839873.nurec",
+    "gaussians": 1445429,
+    "sh_degree": 3,
+    "renderer": "gsplat CUDA anisotropic 3D Gaussian rasterization",
+    "coordinate_frame": "NuRec raw tensor XYZ, same unrotated metre/Z-up frame as collision mesh; USD display-axis conversion intentionally omitted",
+    "sha256": "d2edbea3b040b9d5e0eef7564c689913c147eba0994619679f40d4bbc44e6a02",
+    "limits": "Same NuRec Gaussians and SH3, rendered with gsplat rather than the original 3DGRUT unscented/ray renderer. Robot mesh is not composited into Gaussian RGB."
+  },
+  {
+    "name": "Mesh-only metric stage has no synthetic floor or Gaussian geometry",
+    "pass": true,
+    "mesh_count": 60,
+    "synthetic_ground": false,
+    "gaussians_in_rtx_stage": false
+  },
+  {
+    "name": "Occupancy random spawn with clearance",
+    "pass": true,
+    "seed": 42,
+    "pixel_row_col": [
+      25,
+      89
+    ],
+    "position": [
+      2.0550000026822093,
+      -10.1649995803833,
+      0.42
+    ],
+    "yaw_rad": -0.38403808930179695,
+    "clearance_m": 0.8321658488546619,
+    "required_clearance_m": 0.8,
+    "candidates": 313,
+    "occupancy_value": 255,
+    "mapping": {
+      "flip_x": true,
+      "flip_y": false,
+      "scale": 0.05,
+      "origin_xy": [
+        -0.11999999731779099,
+        -11.4399995803833
+      ]
+    }
+  },
+  {
+    "name": "Mesh independently supports spawn",
+    "pass": true,
+    "hit": true,
+    "position": [
+      2.054999828338623,
+      -10.164999008178711,
+      0.0
+    ],
+    "normal": [
+      0.0,
+      -0.0,
+      1.0
+    ],
+    "distance": 1.0,
+    "collision": "/World/InteriorMesh/SM_floorplan",
+    "rigidBody": "/World/InteriorMesh/SM_floorplan"
+  },
+  {
+    "name": "Robot feet have physical mesh support contacts",
+    "pass": true,
+    "mean_vertical_contact_force_N": 145.97021837459502
+  },
+  {
+    "name": "Robot trajectory stays in occupancy free space",
+    "pass": true,
+    "free_fraction": 1.0,
+    "minimum_center_clearance_m": 0.38078865529319544
+  },
+  {
+    "name": "D435 metric depth matches independent collision triangle rays",
+    "pass": true,
+    "rays": 32,
+    "median_error_m": 6.058561363708748e-08,
+    "p90_error_m": 1.7981596251992473e-07
+  },
+  {
+    "name": "MID360 points lie on independent collision mesh",
+    "pass": true,
+    "points": 200,
+    "median_distance_m": 1.5560923050113292e-07,
+    "p90_distance_m": 3.3146993434485275e-07
+  },
+  {
+    "name": "Actual Gaussian RGB has coverage and texture",
+    "pass": true,
+    "frames": 361,
+    "rgb_std": 39.88746117961809,
+    "mean_alpha": 0.9938860535621643
+  },
+  {
+    "name": "WASDZC changes rendered Gaussian camera views",
+    "pass": true,
+    "views": 6,
+    "maximum_mean_pixel_change": 64.34324508101852
+  }
+]

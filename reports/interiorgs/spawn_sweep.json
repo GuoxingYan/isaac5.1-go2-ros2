@@ -1,0 +1,907 @@
+{
+  "seeds": 32,
+  "unique_spawn_pixels": 31,
+  "mesh_floor_hits": 32,
+  "maximum_floor_z_error_m": 0.0,
+  "all_occupancy_white": true,
+  "minimum_clearance_m": 0.8,
+  "pass": true,
+  "samples": [
+    {
+      "seed": 0,
+      "pixel_row_col": [
+        38,
+        100
+      ],
+      "position": [
+        1.505000002682209,
+        -9.5149995803833,
+        0.42
+      ],
+      "yaw_rad": -1.4464727375963786,
+      "clearance_m": 0.8321658488546619,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 1,
+      "pixel_row_col": [
+        30,
+        97
+      ],
+      "position": [
+        1.6550000026822091,
+        -9.9149995803833,
+        0.42
+      ],
+      "yaw_rad": 2.8303468781729233,
+      "clearance_m": 0.9617692030835672,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 2,
+      "pixel_row_col": [
+        37,
+        106
+      ],
+      "position": [
+        1.2050000026822092,
+        -9.5649995803833,
+        0.42
+      ],
+      "yaw_rad": -1.266117486966939,
+      "clearance_m": 0.9055385138137417,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 3,
+      "pixel_row_col": [
+        37,
+        98
+      ],
+      "position": [
+        1.605000002682209,
+        -9.5649995803833,
+        0.42
+      ],
+      "yaw_rad": -1.653668357959425,
+      "clearance_m": 0.8276472678623424,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 4,
+      "pixel_row_col": [
+        35,
+        96
+      ],
+      "position": [
+        1.7050000026822092,
+        -9.6649995803833,
+        0.42
+      ],
+      "yaw_rad": 0.07117311340949772,
+      "clearance_m": 0.8246211251235321,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 5,
+      "pixel_row_col": [
+        33,
+        104
+      ],
+      "position": [
+        1.305000002682209,
+        -9.7649995803833,
+        0.42
+      ],
+      "yaw_rad": 1.9348490455536158,
+      "clearance_m": 1.0012492197250393,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 6,
+      "pixel_row_col": [
+        30,
+        21
+      ],
+      "position": [
+        5.455000002682209,
+        -9.9149995803833,
+        0.42
+      ],
+      "yaw_rad": -0.9847581679958686,
+      "clearance_m": 0.8200609733428363,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 7,
+      "pixel_row_col": [
+        41,
+        108
+      ],
+      "position": [
+        1.105000002682209,
+        -9.364999580383301,
+        0.42
+      ],
+      "yaw_rad": 2.4957679180609933,
+      "clearance_m": 0.8062257748298549,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 8,
+      "pixel_row_col": [
+        34,
+        107
+      ],
+      "position": [
+        1.1550000026822091,
+        -9.714999580383301,
+        0.42
+      ],
+      "yaw_rad": 3.061650702589703,
+      "clearance_m": 0.8500000000000001,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 9,
+      "pixel_row_col": [
+        29,
+        101
+      ],
+      "position": [
+        1.4550000026822092,
+        -9.964999580383301,
+        0.42
+      ],
+      "yaw_rad": -1.33946697960461,
+      "clearance_m": 1.05,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 10,
+      "pixel_row_col": [
+        36,
+        99
+      ],
+      "position": [
+        1.555000002682209,
+        -9.614999580383301,
+        0.42
+      ],
+      "yaw_rad": -1.836689355932036,
+      "clearance_m": 0.894427190999916,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 11,
+      "pixel_row_col": [
+        25,
+        103
+      ],
+      "position": [
+        1.355000002682209,
+        -10.1649995803833,
+        0.42
+      ],
+      "yaw_rad": -0.004537324106032248,
+      "clearance_m": 0.8500000000000001,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 12,
+      "pixel_row_col": [
+        32,
+        102
+      ],
+      "position": [
+        1.4050000026822091,
+        -9.8149995803833,
+        0.42
+      ],
+      "yaw_rad": 2.807031526513578,
+      "clearance_m": 1.1,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 13,
+      "pixel_row_col": [
+        39,
+        106
+      ],
+      "position": [
+        1.2050000026822092,
+        -9.464999580383301,
+        0.42
+      ],
+      "yaw_rad": 2.2324315414250684,
+      "clearance_m": 0.9219544457292888,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 14,
+      "pixel_row_col": [
+        26,
+        23
+      ],
+      "position": [
+        5.3550000026822095,
+        -10.114999580383301,
+        0.42
+      ],
+      "yaw_rad": -0.873697859861347,
+      "clearance_m": 0.8139410298049854,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 15,
+      "pixel_row_col": [
+        41,
+        104
+      ],
+      "position": [
+        1.305000002682209,
+        -9.364999580383301,
+        0.42
+      ],
+      "yaw_rad": 1.984337433702616,
+      "clearance_m": 0.848528137423857,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 16,
+      "pixel_row_col": [
+        31,
+        97
+      ],
+      "position": [
+        1.6550000026822091,
+        -9.864999580383301,
+        0.42
+      ],
+      "yaw_rad": -0.43514736749223326,
+      "clearance_m": 0.9394147114027969,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 17,
+      "pixel_row_col": [
+        35,
+        100
+      ],
+      "position": [
+        1.505000002682209,
+        -9.6649995803833,
+        0.42
+      ],
+      "yaw_rad": -2.1301688923047806,
+      "clearance_m": 0.9617692030835672,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 18,
+      "pixel_row_col": [
+        39,
+        105
+      ],
+      "position": [
+        1.255000002682209,
+        -9.464999580383301,
+        0.42
+      ],
+      "yaw_rad": 1.3660567184688812,
+      "clearance_m": 0.95524865872714,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 19,
+      "pixel_row_col": [
+        32,
+        95
+      ],
+      "position": [
+        1.755000002682209,
+        -9.8149995803833,
+        0.42
+      ],
+      "yaw_rad": 2.675816010130509,
+      "clearance_m": 0.8276472678623424,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 20,
+      "pixel_row_col": [
+        39,
+        105
+      ],
+      "position": [
+        1.255000002682209,
+        -9.464999580383301,
+        0.42
+      ],
+      "yaw_rad": -0.2441224221017384,
+      "clearance_m": 0.95524865872714,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 21,
+      "pixel_row_col": [
+        28,
+        22
+      ],
+      "position": [
+        5.405000002682209,
+        -10.0149995803833,
+        0.42
+      ],
+      "yaw_rad": 0.6650565010089093,
+      "clearance_m": 0.8514693182963202,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 22,
+      "pixel_row_col": [
+        36,
+        97
+      ],
+      "position": [
+        1.6550000026822091,
+        -9.614999580383301,
+        0.42
+      ],
+      "yaw_rad": -1.8893828541114908,
+      "clearance_m": 0.8544003745317531,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 23,
+      "pixel_row_col": [
+        24,
+        97
+      ],
+      "position": [
+        1.6550000026822091,
+        -10.214999580383301,
+        0.42
+      ],
+      "yaw_rad": 0.8888082150018626,
+      "clearance_m": 0.8,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 24,
+      "pixel_row_col": [
+        29,
+        23
+      ],
+      "position": [
+        5.3550000026822095,
+        -9.964999580383301,
+        0.42
+      ],
+      "yaw_rad": -0.595788497163459,
+      "clearance_m": 0.9219544457292888,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 25,
+      "pixel_row_col": [
+        30,
+        106
+      ],
+      "position": [
+        1.2050000026822092,
+        -9.9149995803833,
+        0.42
+      ],
+      "yaw_rad": -3.13963207878802,
+      "clearance_m": 0.9,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 26,
+      "pixel_row_col": [
+        38,
+        103
+      ],
+      "position": [
+        1.355000002682209,
+        -9.5149995803833,
+        0.42
+      ],
+      "yaw_rad": -1.6688170087103544,
+      "clearance_m": 0.9219544457292888,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 27,
+      "pixel_row_col": [
+        24,
+        25
+      ],
+      "position": [
+        5.255000002682209,
+        -10.214999580383301,
+        0.42
+      ],
+      "yaw_rad": -1.1698394291785557,
+      "clearance_m": 0.8,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 28,
+      "pixel_row_col": [
+        33,
+        103
+      ],
+      "position": [
+        1.355000002682209,
+        -9.7649995803833,
+        0.42
+      ],
+      "yaw_rad": 2.4183537538926956,
+      "clearance_m": 1.051189802081432,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 29,
+      "pixel_row_col": [
+        41,
+        105
+      ],
+      "position": [
+        1.255000002682209,
+        -9.364999580383301,
+        0.42
+      ],
+      "yaw_rad": 0.039724173491733517,
+      "clearance_m": 0.8845903006477066,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 30,
+      "pixel_row_col": [
+        25,
+        95
+      ],
+      "position": [
+        1.755000002682209,
+        -10.1649995803833,
+        0.42
+      ],
+      "yaw_rad": -0.44543386436483834,
+      "clearance_m": 0.8500000000000001,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    },
+    {
+      "seed": 31,
+      "pixel_row_col": [
+        31,
+        100
+      ],
+      "position": [
+        1.505000002682209,
+        -9.864999580383301,
+        0.42
+      ],
+      "yaw_rad": -2.7163575899037347,
+      "clearance_m": 1.0770329614269007,
+      "required_clearance_m": 0.8,
+      "candidates": 313,
+      "occupancy_value": 255,
+      "mapping": {
+        "flip_x": true,
+        "flip_y": false,
+        "scale": 0.05,
+        "origin_xy": [
+          -0.11999999731779099,
+          -11.4399995803833
+        ]
+      },
+      "mesh_floor_z": 0.0,
+      "pass": true
+    }
+  ]
+}

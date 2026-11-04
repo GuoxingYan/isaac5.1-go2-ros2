@@ -1,0 +1,9 @@
+# Install with --no-deps in existing isaacsim_510; do not replace its torch/CUDA/USD.
+gsplat==1.5.3
+msgpack==1.2.4
+ninja==1.13.2
+jaxtyping==0.3.11
+wadler-lindig==0.1.8
+rich==15.0.0
+markdown-it-py==4.2.0
+mdurl==0.1.2

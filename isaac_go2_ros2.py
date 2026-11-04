@@ -22,6 +22,9 @@ parser.add_argument("--os-keyboard", action="store_true")
 parser.add_argument("--cmd-test", action="store_true")
 parser.add_argument("--max-steps", type=int, default=0)
 parser.add_argument("--report-dir", default="reports/our-go2")
+parser.add_argument("--spawn-seed",type=int,default=None)
+parser.add_argument("--spawn-clearance",type=float,default=.8)
+parser.add_argument("--data-dir",default="data")
 parser.add_argument("--policy", choices=["rough", "flat"], default="rough")
 
 # append AppLauncher cli args
@@ -63,6 +66,14 @@ def run_simulator(cfg):
     go2_env_cfg.sim.device = getattr(args_cli, "device", "cuda:0")
     if not cfg.sensor.enable_imu:
         go2_env_cfg.scene.mid360_imu=None
+    interior_scene=None
+    if cfg.env_name=='interiorgs':
+        if args_cli.policy!='flat' or cfg.num_envs!=1:
+            raise ValueError('InteriorGS uses flat policy and one robot per occupancy-safe spawn')
+        from env.interiorgs_scene import InteriorGSScene
+        interior_scene=InteriorGSScene(args_cli.data_dir,args_cli.spawn_seed,args_cli.spawn_clearance)
+        interior_scene.configure(go2_env_cfg)
+        go2_ctrl.linear_speed=.4
     go2_ctrl.init_base_vel_cmd(cfg.num_envs)
     env, policy = (go2_ctrl.get_rsl_flat_policy if args_cli.policy == "flat" else go2_ctrl.get_rsl_rough_policy)(go2_env_cfg)
 
@@ -84,10 +95,19 @@ def run_simulator(cfg):
 
     # Sensor setup
     sm = go2_sensors.SensorManager(cfg.num_envs, cfg.sensor.enable_lidar or cfg.sensor.enable_camera) if (cfg.sensor.enable_lidar or cfg.sensor.enable_camera or cfg.sensor.enable_imu) else None
-    lidar_annotators = sm.add_rtx_lidar() if cfg.sensor.enable_lidar else []
+    lidar_annotators=[]
+    if cfg.sensor.enable_lidar:
+        if interior_scene:
+            from env.mesh_lidar import CollisionMeshLidar
+            lidar_annotators=[CollisionMeshLidar(env)]
+        else:
+            lidar_annotators=sm.add_rtx_lidar()
     cameras = sm.add_camera(cfg.freq) if cfg.sensor.enable_camera else []
     if cfg.sensor.enable_imu:
         sm.add_imu(env)
+
+    if sm and (cameras or lidar_annotators):
+        sm.bind_pose_updates(env)
 
     # Keyboard control
     keyboard_subscription = None
@@ -115,6 +135,9 @@ def run_simulator(cfg):
     # Run simulation
     sim_step_dt = float(go2_env_cfg.sim.dt * go2_env_cfg.decimation)
     obs, _ = env.reset()
+    if interior_scene:
+        interior_scene.initialize(env,cameras,lidar_annotators,show_rgb=not args_cli.headless)
+        dm.interior_scene=interior_scene
     validator = None
     if args_cli.self_test or args_cli.cmd_test:
         from scripts.validate_runtime import RuntimeValidator
@@ -122,7 +145,7 @@ def run_simulator(cfg):
     step = 0
     while simulation_app.is_running():
         if validator:
-            validator.before_step(step + 1000 if args_cli.cmd_test else step)
+            validator.before_step(step + validator.ros_first if args_cli.cmd_test else step)
 
         start_time = time.time()
         with torch.inference_mode():
@@ -140,7 +163,7 @@ def run_simulator(cfg):
                 dm.pub_ros2_data()
 
             if validator:
-                validator.after_step(step + 1000 if args_cli.cmd_test else step)
+                validator.after_step(step + validator.ros_first if args_cli.cmd_test else step)
             step += 1
             if (validator and validator.finished) or (args_cli.max_steps and step >= args_cli.max_steps):
                 break
@@ -174,12 +197,12 @@ def run_simulator(cfg):
         def key(name, press=True):
             go2_ctrl.sub_keyboard_event(types.SimpleNamespace(input=name, type=carb.input.KeyboardEventType.KEY_PRESS if press else carb.input.KeyboardEventType.KEY_RELEASE))
         key("W"); key("A"); key("A", False)
-        checks.append({"name":"combo release preserves held W", "pass":bool(torch.allclose(go2_ctrl.base_vel_cmd_input[0], torch.tensor([1.,0.,0.])))})
+        checks.append({"name":"combo release preserves held W", "pass":bool(torch.allclose(go2_ctrl.base_vel_cmd_input[0], torch.tensor([go2_ctrl.linear_speed,0.,0.])))})
         key("SPACE")
         checks.append({"name":"SPACE stops all robots", "pass":bool((go2_ctrl.base_vel_cmd_input==0).all())})
         if cfg.num_envs > 1:
             key("2"); key("W")
-            checks.append({"name":"robot 2 selected exclusively", "pass":bool(go2_ctrl.selected_robot==1 and go2_ctrl.base_vel_cmd_input[1,0]==1 and (go2_ctrl.base_vel_cmd_input[0]==0).all())})
+            checks.append({"name":"robot 2 selected exclusively", "pass":bool(go2_ctrl.selected_robot==1 and go2_ctrl.base_vel_cmd_input[1,0]==go2_ctrl.linear_speed and (go2_ctrl.base_vel_cmd_input[0]==0).all())})
             key("F1")
             checks.append({"name":"F1 selects robot 1 and stops previous", "pass":bool(go2_ctrl.selected_robot==0 and (go2_ctrl.base_vel_cmd_input==0).all())})
         key("SPACE")
@@ -193,7 +216,7 @@ def run_simulator(cfg):
             for i, annotator in enumerate(lidar_annotators):
                 pc = annotator.get_data()
                 pts = pc.get("data") if isinstance(pc,dict) else pc
-                sensor_checks.append({"name":f"robot {i} RTX LiDAR", "pass":bool(pts is not None and pts.size)})
+                sensor_checks.append({"name":(f"robot {i} MID360 mesh rays" if interior_scene else f"robot {i} RTX LiDAR"), "pass":bool(pts is not None and pts.size)})
             sensor_checks.append({"name":"all LiDARs created", "pass":len(lidar_annotators)==cfg.num_envs})
         if cfg.sensor.enable_imu:
             times=np.array([s['time'] for s in dm.imu_history if s['robot']==0])
@@ -212,8 +235,12 @@ def run_simulator(cfg):
         (directory / "smoke.json").write_text(json.dumps(result, indent=2))
     if ROS2_AVAILABLE and dm is not None:
         dm.destroy_node()
+    if interior_scene:
+        interior_scene.save(args_cli.report_dir)
     if validator:
         validator.finish()
+    if sm:
+        sm.close()
     env.close()
     simulation_app.close()
     if validator and not all(r["pass"] for r in validator.results):

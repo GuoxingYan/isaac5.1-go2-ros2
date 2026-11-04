@@ -1,0 +1,2 @@
+mesh (219824, 3) (437915, 3) bounds [ -0.12 -11.44  -0.12] [6.5369997 0.12      2.801    ]
+[{'flip_x': False, 'flip_y': False, 'occupied_precision': 0.7038402457757297, 'free_conflict': 0.2603927752293578}, {'flip_x': False, 'flip_y': True, 'occupied_precision': 0.6544072481572482, 'free_conflict': 0.283615252293578}, {'flip_x': True, 'flip_y': False, 'occupied_precision': 0.9491668586347232, 'free_conflict': 0.03540711009174312}, {'flip_x': True, 'flip_y': True, 'occupied_precision': 0.8011821601289629, 'free_conflict': 0.13725630733944955}]

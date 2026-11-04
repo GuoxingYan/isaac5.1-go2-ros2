@@ -40,7 +40,7 @@ RGB 为渲染彩色图；深度为 `distance_to_image_plane` 的 float32 米制�
 ```bash
 ./run_go2.sh --self-test --os-keyboard # GUI + X11 真实窗口键盘事件验收
 ./scripts/validate_scenes.sh          # 七场景 + 两策略多机器人冒烟测试
-python scripts/build_report.py reports/latest  # 重新生成报告
+python -m scripts.build_report reports/latest  # 重新生成报告
 ```
 
 运行 ROS 指令验收前，应先启动 bridge 和 probe。`--self-test` 最后会请求 probe 通过真实 ROS2 `/unitree_go2/cmd_vel` 发送 0.5 m/s，测量位移并检查超时停止；它会移动机器人，测试中请勿手动操控键盘。仅 callback 注入模式不代表 GUI 操作系统键盘验收。`GO2_NO_RENDER=1` 适用于同时关闭两种传感器的物理冒烟测试。
@@ -66,3 +66,29 @@ GO2_REPORT_DIR=reports/our-go2 ./ros2/run_probe.sh
 本分支共享目录默认为 `outputs/our-go2-bridge`，报告为 `reports/our-go2/report.html`。所有采样率使用模拟时间，不承诺GPU负载下的墙钟实时速度。
 
 规格来源：[D435](https://www.realsenseai.com/products/stereo-depth-camera-d435/)、[D400 datasheet](https://dev.realsenseai.com/download/42003/)、[MID360规格](https://www.livoxtech.com/cn/mid-360/specs)、[Livox SDK2 IMU速率接口](https://github.com/Livox-SDK/Livox-SDK2/blob/master/include/livox_lidar_api.h)。
+
+## InteriorGS 双表示场景（第二阶段）
+
+第一阶段已固定在标签 `our-go2-d435-mid360-v1-validated`（`dc524ee`）；第二阶段在 `codex/our-go2-interiorgs`，不改写第一阶段证据。
+
+将原始数据放在 `data/`：`839873.usdz`、`839873_collision.usd`、`occupancy.png`、`occupancy.json`。使用已有环境安装附加依赖，不替换 torch：
+
+```bash
+conda activate isaacsim_510
+python -m pip install --no-deps -r requirements-gaussian.txt
+./prepare_interiorgs.sh
+GO2_DATA_DIR="$PWD/outputs/interiorgs-bridge" ./ros2/start_bridge.sh
+GO2_REPORT_DIR=reports/interiorgs GO2_PROBE_SECONDS=1800 ./ros2/run_probe.sh
+./run_interiorgs.sh --spawn-seed 42 --self-test --os-keyboard
+./run_interiorgs.sh                 # 每次随机安全出生；WASDZC控制
+```
+
+RGB直接读取USDZ中NuRec的1,445,429个高斯、SH3系数，由gsplat渲染，并在GUI独立窗口实时显示。未用外部PLY替换模型。深度和MID360使用原始碰撞mesh的Warp CUDA三角形射线求交；机器人接触由同一mesh的PhysX碰撞承载。深度使用D435深度内参，输出轴向Z米值，RGB与深度视场独立。该分支在此场景中不依赖原生RTX相机投影或RTX LiDAR返回；报告明确记录实际后端。
+
+occupancy白色为可通行，额外叠加mesh障碍并保留0.8米中心净空。该样本的像素映射经mesh独立核对为X翻转、Y不翻转，不能盲用于其他样本。种子可复现；不传种子则随机采样。原始高斯张量、mesh及occupancy统一使用米制Z-up坐标。离线USD检查器隔离安装在outputs/usd_tools，不向Isaac运行进程注入该USD库。
+
+限制：传感器外参未实机标定；高斯RGB未合成机器人mesh，mesh深度/LiDAR目前也不包含机器人自身遮挡；没有硬件噪声、反射率、专有扫描轨迹或扫描运动畸变模型。MID360每10Hz窗口20000条射线，速率按模拟时间计算。首次gsplat CUDA编译需数分钟；当前负载下仿真慢于实时。短时运动验收不代表任意房间/障碍物的长期自主导航能力。仅单机器人、flat策略；此场景禁用语义输出，避免不一致投影。
+
+报告：`reports/interiorgs/report.html`（自包含RGB、深度、两类点云、IMU、六方向高斯视图、occupancy轨迹及独立几何误差）。原始数组、逐项结果和场景来源保存在同目录。
+
+数据来源：[InteriorGS](https://huggingface.co/datasets/spatialverse/InteriorGS)、[SAGE-3D Collision Mesh](https://huggingface.co/datasets/spatialverse/SAGE-3D_Collision_Mesh)、[SAGE官方代码](https://github.com/Galery23/SAGE-3D_Official)、[NuRec/3DGRUT](https://github.com/nv-tlabs/3dgrut)。
