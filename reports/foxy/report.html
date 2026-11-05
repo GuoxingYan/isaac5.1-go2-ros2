@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>Go2 Foxy 迁移状态</title>
+<style>body{font:16px system-ui;background:#101827;color:#e2e8f0;margin:40px auto;max-width:900px;padding:20px}section{background:#1e293b;padding:20px;border-radius:12px;margin:18px 0}a{color:#7dd3fc}.pending{color:#fbbf24}code{background:#0f172a;padding:3px}</style>
+<h1>Go2 · ROS2 Foxy chroot 迁移状态</h1>
+<section><h2 class="pending">等待 Foxy 运行时验证</h2><p>桥接与探针已改为 Foxy chroot，并按顺序加载 <code>/opt/ros/foxy</code>、Fast-LIO 工作区和 GO2 Fast-LIO 工作区。当前自动会话没有 sudo 密码，无法进入 chroot，因此此页不把既有 Humble/宿主结果标记为 Foxy 验证通过。</p></section>
+<section><h2>运行后生成的可视化报告</h2><p>执行 <code>./run_interiorgs.sh --self-test --os-keyboard --report-dir reports/foxy</code> 后，会覆盖本页，生成 RGB、深度、LiDAR/RGB-D 点云、IMU、WASDZC 运动、ROS2 消息统计的自包含报告。</p></section>
+<section><h2>已验证的 InteriorGS 可视化基线</h2><p><a href="../interiorgs/report.html">打开 54/54 项 InteriorGS 可视化报告</a>。该报告是 GPU 传感器和 WASDZC 的实际验证基线，但不是 Foxy chroot 的运行时证据。</p></section>
+</html>

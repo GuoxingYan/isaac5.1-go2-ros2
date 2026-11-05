@@ -127,10 +127,13 @@ class SensorManager:
     def bind_pose_updates(self,env):
         """每次渲染前从物理根节点读取位姿，避免 USD 初始位姿被外部渲染器误用。"""
         self.env=env
+        self._closed=False
         sim=env.unwrapped.sim
         original=sim.render
         self.original_render=original
         def render_with_sensor_pose(*args,**kwargs):
+            # Isaac Lab 在 Stop 回调中可能先销毁 articulation 的 PhysX view，
+            # 然后再调用 render()。此时只渲染，不再读取已失效的物理对象。
             self.sync_poses()
             return original(*args,**kwargs)
         sim.render=render_with_sensor_pose
@@ -138,8 +141,17 @@ class SensorManager:
 
     def sync_poses(self):
         from scipy.spatial.transform import Rotation
-        robot=self.env.unwrapped.scene['unitree_go2']
-        transforms=robot.root_physx_view.get_root_transforms().detach().cpu().numpy()
+        if getattr(self,'_closed',False):
+            return False
+        try:
+            robot=self.env.unwrapped.scene['unitree_go2']
+            view=getattr(robot,'root_physx_view',None)
+            if view is None:
+                return False
+            transforms=view.get_root_transforms().detach().cpu().numpy()
+        except (AttributeError, KeyError, ReferenceError, RuntimeError):
+            # Teardown path: Isaac/PhysX has already released this view.
+            return False
         for i,state in enumerate(transforms):
             rotation=Rotation.from_quat(state[3:7])
             if hasattr(self,'cameras'):
@@ -154,6 +166,7 @@ class SensorManager:
                 pos=state[:3]+rotation.apply(PROFILE['lidar']['position'])
                 self.lidar_prims[i].GetAttribute('xformOp:translate').Set(Gf.Vec3d(*pos.tolist()))
                 self.lidar_prims[i].GetAttribute('xformOp:orient').Set(Gf.Quatd(float(q[0]),Gf.Vec3d(*q[1:].tolist())))
+        return True
 
     def add_imu(self,env):
         self.imu=env.unwrapped.scene['mid360_imu']
@@ -177,7 +190,14 @@ class SensorManager:
         self.imu_samples=self.imu_samples[-20000:]
 
     def close(self):
+        self._closed=True
         if hasattr(self,'original_render'):
-            self.env.unwrapped.sim.render=self.original_render
+            try:
+                self.env.unwrapped.sim.render=self.original_render
+            except (AttributeError, ReferenceError, RuntimeError):
+                pass
         if hasattr(self,'sim'):
-            self.sim.remove_physics_callback('mid360_imu_200hz')
+            try:
+                self.sim.remove_physics_callback('mid360_imu_200hz')
+            except (AttributeError, ReferenceError, RuntimeError):
+                pass
