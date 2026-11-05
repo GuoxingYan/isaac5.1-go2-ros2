@@ -43,6 +43,8 @@ def build(directory):
         plots.insert(0,('Go2 simulation viewport',directory/'simulation_view.png'))
     if (directory/'gui_gaussian_window.png').exists():
         plots.append(('Actual Isaac GUI with live D435 Gaussian RGB window',directory/'gui_gaussian_window.png'))
+    if (directory/'rviz_foxy.png').exists():
+        plots.insert(0,('Foxy RViz · live RGB, depth and LiDAR during Isaac Sim',directory/'rviz_foxy.png'))
     multi=directory.parent/'scenes'/'multi-sensors'/'simulation_view.png'
     if multi.exists() and not d.get("sensor_profile"):
         plots.append(('Three Go2 robots · RGBD + RTX LiDAR verified on all robots',multi))
@@ -115,6 +117,13 @@ def build(directory):
     sim_seconds=max(0,len(d['trajectory'])-1)*.02
     average_rtf=sim_seconds/max(d['elapsed_s'],.001)
     count=sum(r['pass'] for r in d['results'])
+    foxy_section=''
+    topics_path=directory/'ros_topics.json'
+    if directory.name=='foxy' and topics_path.exists():
+        topics=json.loads(topics_path.read_text())
+        counts=topics['counts']
+        active={k:v for k,v in counts.items() if k!='semantic'}
+        foxy_section='<h2>ROS 2 Foxy chroot · 实际订阅计数</h2><p>在 /home/foxy_box 中运行 bridge 与 probe，ROS_DOMAIN_ID=42。semantic 在 InteriorGS 配置中关闭。RViz 截图来自 Isaac Sim 实时发布期间的 X11 桌面。</p><pre>'+html.escape(json.dumps(active,ensure_ascii=False,indent=2))+'</pre>'
     hardware=''
     if d.get('sensor_profile'):
         profile=d['sensor_profile']
@@ -125,7 +134,7 @@ def build(directory):
     notes=directory/'VALIDATED.md'
     validation_notes='<h2>验收范围与限制</h2><pre>'+html.escape(notes.read_text())+'</pre>' if notes.exists() else ''
     scene_section=f'<h2>场景与多机器人验收 · {scene_pass}/{len(expected)}</h2><table>{scene_rows}</table>' if expected else ''
-    page=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Go2 Ubuntu 22.04 验证报告</title><style>body{{font:16px system-ui;background:#101827;color:#e2e8f0;margin:40px auto;max-width:1400px;padding:20px}}h1{{font-size:36px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:24px}}figure{{margin:0;background:#1e293b;padding:16px;border-radius:12px}}img{{width:100%;border-radius:8px}}figcaption{{padding:12px}}table{{width:100%;border-collapse:collapse}}td,th{{padding:12px;text-align:left;border-bottom:1px solid #334155}}pre{{white-space:pre-wrap;word-break:break-word;max-width:800px}}.pass{{color:#4ade80}}.fail{{color:#fb7185}}</style><h1>Go2 · Ubuntu 22.04 工作站仿真验证</h1><p>Isaac Sim 5.1 · conda isaacsim_510 · RTX 3090 · {count}/{len(d['results'])} checks passed · {d['elapsed_s']:.1f}s wall time · average RTF {average_rtf:.2f}</p><p>{acquisition}键盘 callback 注入和 OS 窗口键盘输入分别验收；未执行项目不视为通过。</p><div class="grid">{cards}</div>{hardware}<h2>验收记录</h2><table><tr><th>功能</th><th>结果</th><th>证据</th></tr>{rows}</table>{scene_section}{spawn_section}{validation_notes}<h2>运行环境</h2><pre>{environment}</pre><h2>传感器诊断</h2><pre>{html.escape(json.dumps(d['sensor_errors'],ensure_ascii=False,indent=2))}</pre></html>'''
+    page=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Go2 Foxy 验证报告</title><style>body{{font:16px system-ui;background:#101827;color:#e2e8f0;margin:40px auto;max-width:1400px;padding:20px}}h1{{font-size:36px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:24px}}figure{{margin:0;background:#1e293b;padding:16px;border-radius:12px}}img{{width:100%;border-radius:8px}}figcaption{{padding:12px}}table{{width:100%;border-collapse:collapse}}td,th{{padding:12px;text-align:left;border-bottom:1px solid #334155}}pre{{white-space:pre-wrap;word-break:break-word;max-width:800px}}.pass{{color:#4ade80}}.fail{{color:#fb7185}}</style><h1>Go2 · Ubuntu 22.04 工作站仿真验证</h1><p>Isaac Sim 5.1 · conda isaacsim_510 · RTX 3090 · {count}/{len(d['results'])} checks passed · {d['elapsed_s']:.1f}s wall time · average RTF {average_rtf:.2f}</p><p>{acquisition}键盘 callback 注入和 OS 窗口键盘输入分别验收；未执行项目不视为通过。</p>{foxy_section}<div class="grid">{cards}</div>{hardware}<h2>验收记录</h2><table><tr><th>功能</th><th>结果</th><th>证据</th></tr>{rows}</table>{scene_section}{spawn_section}{validation_notes}<h2>运行环境</h2><pre>{environment}</pre><h2>传感器诊断</h2><pre>{html.escape(json.dumps(d['sensor_errors'],ensure_ascii=False,indent=2))}</pre></html>'''
     (directory/'report.html').write_text(page, encoding='utf-8')
     print('REPORT:',directory/'report.html',flush=True)
 

@@ -1,0 +1,93 @@
+{
+  "scene_id": "839873",
+  "spawn": {
+    "seed": 42,
+    "pixel_row_col": [
+      28,
+      101
+    ],
+    "position": [
+      1.4550000026822092,
+      -10.0149995803833,
+      0.42
+    ],
+    "yaw_rad": -0.38403808930179695,
+    "clearance_m": 1.0,
+    "required_clearance_m": 1.0,
+    "candidates": 49,
+    "occupancy_value": 255,
+    "mapping": {
+      "flip_x": true,
+      "flip_y": false,
+      "scale": 0.05,
+      "origin_xy": [
+        -0.11999999731779099,
+        -11.4399995803833
+      ]
+    }
+  },
+  "mesh_count": 60,
+  "support": {
+    "hit": true,
+    "position": [
+      1.4549999237060547,
+      -10.014998435974121,
+      0.0
+    ],
+    "normal": [
+      0.0,
+      -0.0,
+      1.0
+    ],
+    "distance": 1.0,
+    "collision": "/World/InteriorMesh/SM_floorplan",
+    "rigidBody": "/World/InteriorMesh/SM_floorplan"
+  },
+  "rgb_source": "USDZ/NuRec Gaussian parameters \u2192 gsplat SH3",
+  "lidar_backend": "Warp CUDA exact collision mesh ray queries, instantaneous 20k-ray scans at 10Hz; no proprietary motion-distortion or reflectance model",
+  "metric_source": "839873_collision.usd triangles -> Warp CUDA pinhole depth and LiDAR; authored PhysX colliders for contacts; no Gaussian geometry or synthetic ground in metric queries",
+  "renderer": {
+    "source": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/839873.usdz",
+    "member": "839873.nurec",
+    "gaussians": 1445429,
+    "sh_degree": 3,
+    "renderer": "gsplat CUDA anisotropic 3D Gaussian rasterization",
+    "coordinate_frame": "NuRec raw tensor XYZ, same unrotated metre/Z-up frame as collision mesh; USD display-axis conversion intentionally omitted",
+    "sha256": "d2edbea3b040b9d5e0eef7564c689913c147eba0994619679f40d4bbc44e6a02",
+    "limits": "Same NuRec Gaussians and SH3, rendered with gsplat rather than the original 3DGRUT unscented/ray renderer. Robot mesh is not composited into Gaussian RGB."
+  },
+  "synthetic_ground": false,
+  "metric_stage_volume_count": 0,
+  "last_camera_pose": {
+    "position": [
+      1.802013635635376,
+      -10.186893463134766,
+      0.4840579926967621
+    ],
+    "quaternion_wxyz": [
+      -0.34363558888435364,
+      0.35783281922340393,
+      -0.5798888206481934,
+      0.6462191939353943
+    ],
+    "intrinsics": [
+      [
+        465.6029052734375,
+        0.0,
+        320.0
+      ],
+      [
+        0.0,
+        465.6028747558594,
+        180.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "rendered_frames": 422,
+  "mean_gaussian_render_s": 0.008025314947884029
+}

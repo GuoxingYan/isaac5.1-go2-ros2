@@ -14,7 +14,6 @@ from builtin_interfaces.msg import Time
 from rosgraph_msgs.msg import Clock
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
 from sensor_msgs.msg import Image, PointCloud2, PointField, CameraInfo, Imu
-from sensor_msgs_py import point_cloud2
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 from PIL import Image as PILImage
 import numpy as np
@@ -255,7 +254,17 @@ class Go2Bridge(Node):
                         from std_msgs.msg import Header
                         lidar_stamp=float(data.get('lidar_time',sim_stamp))
                         header = Header(stamp=Time(sec=int(lidar_stamp),nanosec=int((lidar_stamp%1)*1e9)), frame_id="unitree_go2/lidar")
-                        pc2 = point_cloud2.create_cloud(header, fields, pts[:, :3])
+                        xyz = np.ascontiguousarray(pts[:, :3], dtype=np.float32)
+                        pc2 = PointCloud2()
+                        pc2.header = header
+                        pc2.height = 1
+                        pc2.width = len(xyz)
+                        pc2.fields = fields
+                        pc2.is_bigendian = False
+                        pc2.point_step = 12
+                        pc2.row_step = pc2.point_step * pc2.width
+                        pc2.data = xyz.tobytes()
+                        pc2.is_dense = bool(np.isfinite(xyz).all())
                         self.lidar_pub.publish(pc2)
                         self.livox_pub.publish(pc2)
                 except Exception as e:
