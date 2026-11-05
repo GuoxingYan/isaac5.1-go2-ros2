@@ -11,7 +11,7 @@ import argparse
 
 # Use packages installed in the active conda environment; no Windows DLL shims.
 os.environ.setdefault("ROS_DOMAIN_ID", "42")
-os.environ.setdefault("ROS_DISTRO", "humble")
+os.environ.setdefault("ROS_DISTRO", "foxy")
 
 from isaaclab.app import AppLauncher
 
@@ -250,4 +250,3 @@ def run_simulator(cfg):
 
 if __name__ == "__main__":
     run_simulator()
-    

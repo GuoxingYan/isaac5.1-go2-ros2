@@ -7,9 +7,9 @@
 ./run_go2.sh --headless --self-test   # 六方向运动、RGBD、点云验证及 HTML 报告
 ./run_go2.sh --policy flat            # 平地策略；默认 rough
 ./run_go2.sh num_envs=3               # 多机器人
-./ros2/start_bridge.sh               # 独立 ROS2 Humble 发布进程
+./ros2/start_bridge.sh               # 独立 ROS2 Foxy chroot 发布进程
 ./ros2/start_bridge.sh --rviz-only   # 使用已有桥接进程打开 RViz
-./ros2/run_probe.sh                  # 记录收到的真实 ROS2 消息
+./ros2/run_probe.sh                  # Foxy chroot 记录收到的真实 ROS2 消息
 ```
 
 GUI 中点击仿真窗口使其获得焦点，W/S 前后，A/D 横移，Z/C 旋转，松键停止，SPACE 紧急停止，1–9 / F1–F12 选择机器人。支持组合键。
@@ -90,5 +90,20 @@ occupancy白色为可通行，额外叠加mesh障碍并保留0.8米中心净空�
 限制：传感器外参未实机标定；高斯RGB未合成机器人mesh，mesh深度/LiDAR目前也不包含机器人自身遮挡；没有硬件噪声、反射率、专有扫描轨迹或扫描运动畸变模型。MID360每10Hz窗口20000条射线，速率按模拟时间计算。首次gsplat CUDA编译需数分钟；当前负载下仿真慢于实时。短时运动验收不代表任意房间/障碍物的长期自主导航能力。仅单机器人、flat策略；此场景禁用语义输出，避免不一致投影。
 
 报告：`reports/interiorgs/report.html`（自包含RGB、深度、两类点云、IMU、六方向高斯视图、occupancy轨迹及独立几何误差）。原始数组、逐项结果和场景来源保存在同目录。
+
+## ROS2 Foxy chroot
+
+本项目的 ROS2 桥接和探针使用本机 Foxy chroot，不再回退到 Humble。启动脚本依次加载 `/opt/ros/foxy/setup.bash`、`/root/fastlivo_ws/install/setup.bash` 和 `/root/GO2_fastlivo2/install/setup.bash`。先把项目和共享输出目录 bind mount 到 chroot 内，并设置路径：
+
+```bash
+sudo mkdir -p /home/foxy_box/root/isaac5.1-go2-ros2
+sudo mount --bind "$PWD" /home/foxy_box/root/isaac5.1-go2-ros2
+export GO2_FOXY_PROJECT=/root/isaac5.1-go2-ros2
+export GO2_FOXY_CHROOT=/home/foxy_box
+./ros2/start_bridge.sh
+GO2_REPORT_DIR=reports/foxy GO2_PROBE_SECONDS=120 ./ros2/run_probe.sh
+```
+
+`GO2_DATA_DIR` 也必须是 chroot 内可见的路径。脚本在 Foxy chroot 缺失时会直接报错，不会悄悄使用宿主 Humble；验证报告输出到 `reports/foxy/report.html`。
 
 数据来源：[InteriorGS](https://huggingface.co/datasets/spatialverse/InteriorGS)、[SAGE-3D Collision Mesh](https://huggingface.co/datasets/spatialverse/SAGE-3D_Collision_Mesh)、[SAGE官方代码](https://github.com/Galery23/SAGE-3D_Official)、[NuRec/3DGRUT](https://github.com/nv-tlabs/3dgrut)。
