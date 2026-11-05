@@ -106,4 +106,14 @@ GO2_REPORT_DIR=reports/foxy GO2_PROBE_SECONDS=120 ./ros2/run_probe.sh
 
 `GO2_DATA_DIR` 也必须是 chroot 内可见的路径。脚本在 Foxy chroot 缺失时会直接报错，不会悄悄使用宿主 Humble；验证报告输出到 `reports/foxy/report.html`。
 
+对 InteriorGS 做 Foxy 端到端验证时，使用同一共享输出目录启动桥接、探针和仿真：
+
+```bash
+GO2_DATA_DIR="$PWD/outputs/interiorgs-bridge" ./ros2/start_bridge.sh
+GO2_REPORT_DIR=reports/foxy GO2_PROBE_SECONDS=1800 ./ros2/run_probe.sh
+./run_interiorgs.sh --spawn-seed 42 --self-test --os-keyboard --report-dir reports/foxy
+```
+
+仿真结束后会由现有报告构建器生成 `reports/foxy/report.html`，其中 ROS2 计数来自 Foxy chroot 内实际收到的消息。
+
 数据来源：[InteriorGS](https://huggingface.co/datasets/spatialverse/InteriorGS)、[SAGE-3D Collision Mesh](https://huggingface.co/datasets/spatialverse/SAGE-3D_Collision_Mesh)、[SAGE官方代码](https://github.com/Galery23/SAGE-3D_Official)、[NuRec/3DGRUT](https://github.com/nv-tlabs/3dgrut)。
