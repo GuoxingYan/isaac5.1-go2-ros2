@@ -1,0 +1,152 @@
+{
+  "scene": "interiorgs",
+  "num_envs": 1,
+  "policy": "flat",
+  "steps": 60,
+  "control_checks": [
+    {
+      "name": "combo release preserves held W",
+      "pass": true
+    },
+    {
+      "name": "SPACE stops all robots",
+      "pass": true
+    },
+    {
+      "name": "robot 0 RGBD",
+      "pass": true
+    },
+    {
+      "name": "all cameras created",
+      "pass": true
+    },
+    {
+      "name": "robot 0 RTX LiDAR",
+      "pass": true
+    },
+    {
+      "name": "all LiDARs created",
+      "pass": true
+    },
+    {
+      "name": "MID360 IMU 200Hz samples",
+      "pass": true,
+      "samples": 240,
+      "simulation_hz": 200.00000447034847
+    }
+  ],
+  "root_states": [
+    [
+      1.3714640140533447,
+      -9.565963745117188,
+      0.27733978629112244,
+      0.7239706516265869,
+      0.023892370983958244,
+      0.008407742716372013,
+      0.6893656253814697,
+      -0.018303168937563896,
+      0.287431925535202,
+      -0.1017032116651535,
+      0.17460180819034576,
+      -0.0075596091337502,
+      0.14791050553321838
+    ]
+  ],
+  "warehouse_meshes": 0,
+  "mapping_checks": [
+    {
+      "name": "occupancy waypoint cruise moves the robot",
+      "pass": true,
+      "start_xy": [
+        1.4050000026822091,
+        -9.964999580383301
+      ],
+      "final_xy": [
+        1.3714640140533447,
+        -9.565963745117188
+      ],
+      "displacement_m": 0.4004425806028129,
+      "waypoints": [
+        [
+          1.4050000026822091,
+          -9.964999580383301
+        ],
+        [
+          1.4050000026822091,
+          -5.7649995803833
+        ],
+        [
+          1.4050000026822091,
+          -1.6149995803832997
+        ]
+      ],
+      "final_body_command_vx_vy_omega": [
+        0.4000000059604645,
+        0.10000000149011612,
+        0.06305629760026932
+      ]
+    },
+    {
+      "name": "collision-mesh LiDAR density and per-point time",
+      "pass": true,
+      "returns": 19937,
+      "planned_rays": 20000,
+      "timestamp_unit": "nanoseconds since simulation clock",
+      "timestamp_min_ns": 1209999972.9543924,
+      "timestamp_max_ns": 1309994972.9543924,
+      "timestamp_span_s": 0.099995
+    },
+    {
+      "name": "mapping ROS profile matches expected PointCloud2/QoS contract",
+      "pass": true,
+      "frame_id": "livox_frame",
+      "fields": [
+        {
+          "name": "x",
+          "offset": 0,
+          "datatype": "FLOAT32"
+        },
+        {
+          "name": "y",
+          "offset": 4,
+          "datatype": "FLOAT32"
+        },
+        {
+          "name": "z",
+          "offset": 8,
+          "datatype": "FLOAT32"
+        },
+        {
+          "name": "intensity",
+          "offset": 12,
+          "datatype": "FLOAT32"
+        },
+        {
+          "name": "tag",
+          "offset": 16,
+          "datatype": "UINT8"
+        },
+        {
+          "name": "line",
+          "offset": 17,
+          "datatype": "UINT8"
+        },
+        {
+          "name": "timestamp",
+          "offset": 18,
+          "datatype": "FLOAT64",
+          "unit": "nanoseconds"
+        }
+      ],
+      "point_step_bytes": 26,
+      "qos": {
+        "reliability": "reliable",
+        "depth": 256,
+        "durability": "volatile"
+      },
+      "imu_frame_id": "livox_frame",
+      "imu_hz": 200.00000447034847
+    }
+  ],
+  "pass": true
+}

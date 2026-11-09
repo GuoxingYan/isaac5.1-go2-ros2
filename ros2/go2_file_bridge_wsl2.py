@@ -13,9 +13,12 @@ from nav_msgs.msg import Odometry
 from builtin_interfaces.msg import Time
 from rosgraph_msgs.msg import Clock
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from std_srvs.srv import Trigger
 from sensor_msgs.msg import Image, PointCloud2, PointField, CameraInfo, Imu
-from sensor_msgs_py import point_cloud2
+from livox_pointcloud import make_livox_pointcloud
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
+from rclpy.qos import QoSProfile, HistoryPolicy, ReliabilityPolicy, DurabilityPolicy
 from PIL import Image as PILImage
 import numpy as np
 
@@ -26,8 +29,11 @@ CMD_VEL_FILE = os.path.join(DATA_DIR, "cmd_vel.json")
 class Go2Bridge(Node):
     def __init__(self):
         super().__init__("go2_file_bridge")
+        qos = QoSProfile(history=HistoryPolicy.KEEP_LAST, depth=int(PROFILE["ros"].get("qos_depth", 256)),
+                         reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.VOLATILE)
         # Publishers
-        self.odom_pub = self.create_publisher(Odometry, "/unitree_go2/odom", 10)
+        self.odom_pub = self.create_publisher(Odometry, "/unitree_go2/odom", qos)
+        self.standard_odom_pub = self.create_publisher(Odometry, "/odom", qos)
         self.pose_pub = self.create_publisher(PoseStamped, "/unitree_go2/pose", 10)
         self.img_pub = self.create_publisher(Image, "/unitree_go2/front_cam/color_image", 1)
         self.depth_pub = self.create_publisher(Image, "/unitree_go2/front_cam/depth_image", 1)
@@ -36,22 +42,31 @@ class Go2Bridge(Node):
         self.cam_info_pub = self.create_publisher(CameraInfo, "/unitree_go2/front_cam/info", 10)
         self.depth_info_pub = self.create_publisher(CameraInfo, "/unitree_go2/front_cam/depth_info", 10)
         self.clock_pub = self.create_publisher(Clock, "/clock", 10)
-        self.imu_pub = self.create_publisher(Imu, "/livox/imu", 200)
-        self.livox_pub = self.create_publisher(PointCloud2, "/livox/lidar", 1)
+        self.imu_pub = self.create_publisher(Imu, "/livox/imu", qos)
+        self.livox_pub = self.create_publisher(PointCloud2, "/livox/lidar", qos)
         self.last_imu_stamp=0.
         self.last_camera_time=None
         self.last_lidar_time=None
+        self.latest_initialpose = None
+        self.initialpose_sent = False
+        self.initialpose_pub = self.create_publisher(PoseWithCovarianceStamped, "/initialpose", 10)
+        self.initialpose_service = self.create_service(Trigger, "/unitree_go2/set_initialpose", self._publish_initialpose)
+        self.publish_oracle_initialpose = os.environ.get("GO2_PUBLISH_ORACLE_INITIALPOSE", "0") == "1"
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_tf = StaticTransformBroadcaster(self)
+        body_frame = PROFILE["ros"].get("body_frame_id", "body")
         transforms=[]
-        for child, xyz, quat in [
-            ("unitree_go2/lidar", PROFILE["lidar"]["position"], [0.,0.,0.,1.]),
+        sensor_transforms = [
+            (PROFILE["ros"]["lidar_frame_id"], PROFILE["lidar"]["position"], [0.,0.1132032138,0.,0.9935718557]),
+            # Navigation's processor uses this historical alias; raw mapping
+            # data remains livox_frame and is never renamed in the message.
+            ("lidar_livox", PROFILE["lidar"]["position"], [0.,0.1132032138,0.,0.9935718557]),
             ("unitree_go2/front_cam", PROFILE["camera"]["position"], [-0.5,0.5,-0.5,0.5]),
-            ("unitree_go2/d435_depth_optical", PROFILE["camera"]["position"], [-0.5,0.5,-0.5,0.5]),
-            ("unitree_go2/mid360_imu", (np.array(PROFILE["lidar"]["position"])+np.array(PROFILE["imu"]["position_in_lidar"])).tolist(), [0.,0.,0.,1.])]:
+            ("unitree_go2/d435_depth_optical", PROFILE["camera"]["position"], [-0.5,0.5,-0.5,0.5])]
+        for child, xyz, quat in sensor_transforms:
             t=TransformStamped()
             t.header.stamp=self.get_clock().now().to_msg()
-            t.header.frame_id="unitree_go2/base_link"
+            t.header.frame_id=body_frame
             t.child_frame_id=child
             t.transform.translation.x,t.transform.translation.y,t.transform.translation.z=xyz
             t.transform.rotation.x,t.transform.rotation.y,t.transform.rotation.z,t.transform.rotation.w=quat
@@ -62,14 +77,14 @@ class Go2Bridge(Node):
         self.latest_cmd_vel = None  # store for debug
 
         # Subscriber: cmd_vel from ROS2 (e.g. from rviz2 2D Nav Goal or teleop)
-        self.cmd_vel_sub = self.create_subscription(
-            Twist, "/unitree_go2/cmd_vel", self._cmd_vel_callback, 10
-        )
+        self.cmd_vel_sub = self.create_subscription(Twist, "/unitree_go2/cmd_vel", self._cmd_vel_callback, 10)
+        self.cmd_vel2_sub = self.create_subscription(Twist, "/cmd_vel2", self._cmd_vel_callback, 10)
 
         self.get_logger().info(
             "Go2 Bridge started\n"
             "  Publishing:  /unitree_go2/odom, /pose, /front_cam/*, /lidar/point_cloud\n"
-            "  Subscribing: /unitree_go2/cmd_vel"
+            f"  Subscribing: /unitree_go2/cmd_vel and /cmd_vel2\n"
+            f"  TF body frame: {body_frame}; oracle /initialpose: {self.publish_oracle_initialpose}"
         )
 
     @staticmethod
@@ -86,9 +101,9 @@ class Go2Bridge(Node):
     def _cmd_vel_callback(self, msg: Twist):
         """Write received cmd_vel to shared file for simulation side to read."""
         cmd = {
-            "linear_x": msg.linear.x,
-            "linear_y": msg.linear.y,
-            "angular_z": msg.angular.z,
+            "linear_x": float(np.clip(msg.linear.x, -0.4, 0.4)),
+            "linear_y": float(np.clip(msg.linear.y, -0.1, 0.1)),
+            "angular_z": float(np.clip(msg.angular.z, -0.6, 0.6)),
             "timestamp": time.time(),
         }
         try:
@@ -102,6 +117,17 @@ class Go2Bridge(Node):
             )
         except Exception as e:
             self.get_logger().warn(f"Failed to write cmd_vel: {e}")
+
+    def _publish_initialpose(self, request, response):
+        del request
+        if self.latest_initialpose is None:
+            response.success = False
+            response.message = "No simulator odometry has been received yet"
+            return response
+        self.initialpose_pub.publish(self.latest_initialpose)
+        response.success = True
+        response.message = "Published current simulation pose on /initialpose"
+        return response
 
     def publish_data(self):
         json_path = os.path.join(DATA_DIR, "data.json")
@@ -143,12 +169,29 @@ class Go2Bridge(Node):
         odom.pose.pose.orientation.z = ori[2]
         odom.pose.pose.orientation.w = ori[3]
         self.odom_pub.publish(odom)
+        self.standard_odom_pub.publish(odom)
+
+        initial = PoseWithCovarianceStamped()
+        initial.header = odom.header
+        initial.header.frame_id = "map"
+        initial.pose.pose = odom.pose.pose
+        initial.pose.covariance[0] = 0.04
+        initial.pose.covariance[7] = 0.04
+        initial.pose.covariance[14] = 0.09
+        initial.pose.covariance[21] = 0.04
+        initial.pose.covariance[28] = 0.04
+        initial.pose.covariance[35] = 0.12
+        self.latest_initialpose = initial
+        if self.publish_oracle_initialpose and (not self.initialpose_sent or frame <= 10):
+            self.initialpose_pub.publish(initial)
+            if frame >= 10:
+                self.initialpose_sent = True
 
         # --- TF ---
         t = TransformStamped()
         t.header.stamp = now
         t.header.frame_id = "odom"
-        t.child_frame_id = "unitree_go2/base_link"
+        t.child_frame_id = PROFILE["ros"].get("body_frame_id", "body")
         t.transform.translation.x = pos[0]
         t.transform.translation.y = pos[1]
         t.transform.translation.z = pos[2]
@@ -247,15 +290,27 @@ class Go2Bridge(Node):
                 try:
                     pts = np.load(pc_path)
                     if len(pts) > 0:
-                        fields = [
-                            PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
-                            PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
-                            PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
-                        ]
-                        from std_msgs.msg import Header
                         lidar_stamp=float(data.get('lidar_time',sim_stamp))
-                        header = Header(stamp=Time(sec=int(lidar_stamp),nanosec=int((lidar_stamp%1)*1e9)), frame_id="unitree_go2/lidar")
-                        pc2 = point_cloud2.create_cloud(header, fields, pts[:, :3])
+                        stamp = Time(sec=int(lidar_stamp), nanosec=int((lidar_stamp % 1) * 1e9))
+                        aux = {}
+                        aux_name = data.get('lidar_aux')
+                        if aux_name and os.path.exists(os.path.join(DATA_DIR, aux_name)):
+                            with np.load(os.path.join(DATA_DIR, aux_name)) as values:
+                                aux = {key: values[key] for key in values.files}
+                        timestamp = aux.get('timestamp')
+                        if timestamp is not None:
+                            timestamp = np.asarray(timestamp, dtype=np.float64)
+                            # New simulator data is explicitly nanoseconds;
+                            # retain the fallback for older second-valued files.
+                            if (data.get('lidar_timestamp_unit') != 'nanoseconds'
+                                    and timestamp.size
+                                    and float(np.nanmax(np.abs(timestamp))) < 1e12):
+                                timestamp = timestamp * 1e9
+                        pc2 = make_livox_pointcloud(
+                            pts[:, :3], stamp, PROFILE["ros"]["lidar_frame_id"],
+                            intensity=aux.get('intensity'), tag=aux.get('tag'),
+                            line=aux.get('line'), timestamp=timestamp,
+                        )
                         self.lidar_pub.publish(pc2)
                         self.livox_pub.publish(pc2)
                 except Exception as e:
@@ -267,10 +322,12 @@ class Go2Bridge(Node):
                 continue
             self.last_imu_stamp=sample['time']
             msg=Imu()
-            msg.header.frame_id='unitree_go2/mid360_imu'
+            msg.header.frame_id=PROFILE["ros"]["imu_frame_id"]
             msg.header.stamp.sec=int(sample['time'])
             msg.header.stamp.nanosec=int((sample['time']%1)*1e9)
-            msg.orientation_covariance[0]=-1.
+            # Match the recorded bag's default IMU message convention. These
+            # identity orientation fields are not a simulator fused estimate.
+            msg.orientation.w=1.0
             msg.angular_velocity.x,msg.angular_velocity.y,msg.angular_velocity.z=sample['angular_velocity']
             msg.linear_acceleration.x,msg.linear_acceleration.y,msg.linear_acceleration.z=sample['linear_acceleration']
             self.imu_pub.publish(msg)

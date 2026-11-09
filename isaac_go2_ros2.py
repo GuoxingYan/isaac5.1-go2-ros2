@@ -5,12 +5,15 @@ import hydra
 import time
 import math
 import argparse
+import json
+from pathlib import Path
+import numpy as np
 
 # Note: 'import torch' is intentionally deferred to after AppLauncher init
 # to avoid DLL conflicts with Isaac Sim 5.1's bundled CUDA runtime.
 
 # Use packages installed in the active conda environment; no Windows DLL shims.
-os.environ.setdefault("ROS_DOMAIN_ID", "42")
+os.environ.setdefault("ROS_DOMAIN_ID", "0")
 os.environ.setdefault("ROS_DISTRO", "humble")
 
 from isaaclab.app import AppLauncher
@@ -23,6 +26,11 @@ parser.add_argument("--cmd-test", action="store_true")
 parser.add_argument("--max-steps", type=int, default=0)
 parser.add_argument("--report-dir", default="reports/our-go2")
 parser.add_argument("--policy", choices=["rough", "flat"], default="rough")
+parser.add_argument("--spawn-seed", type=int, default=None)
+parser.add_argument("--spawn-clearance", type=float, default=0.45)
+parser.add_argument("--data-dir", default="data")
+parser.add_argument("--path-file", default=None)
+parser.add_argument("--no-cruise", action="store_true")
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -63,6 +71,39 @@ def run_simulator(cfg):
     go2_env_cfg.sim.device = getattr(args_cli, "device", "cuda:0")
     if not cfg.sensor.enable_imu:
         go2_env_cfg.scene.mid360_imu=None
+    interior_scene = None
+    scene_path = None
+    if cfg.env_name == "interiorgs":
+        if args_cli.policy != "flat" or cfg.num_envs != 1:
+            raise ValueError("InteriorGS uses flat policy and one robot per scene")
+        path_file = args_cli.path_file or getattr(cfg, "path_file", None)
+        if path_file and Path(path_file).exists():
+            scene_path = json.loads(Path(path_file).read_text())
+            if scene_path.get("frame_id", "scene") != "scene":
+                raise ValueError("InteriorGS path_file must use frame_id=scene")
+            if not scene_path.get("poses"):
+                raise ValueError("InteriorGS path_file contains no poses")
+            first = scene_path["poses"][0]
+            spawn_xy = (float(first["x"]), float(first["y"]))
+            spawn_yaw = float(first.get("yaw", 0.0))
+        else:
+            spawn_xy = spawn_yaw = None
+        from env.interiorgs_scene import InteriorGSScene
+        interior_scene = InteriorGSScene(
+            args_cli.data_dir, args_cli.spawn_seed, args_cli.spawn_clearance,
+            spawn_xy=spawn_xy, spawn_yaw=spawn_yaw,
+        )
+        if scene_path is None:
+            scene_path = InteriorGSScene.default_path(args_cli.data_dir, args_cli.spawn_clearance)
+            first = scene_path["poses"][0]
+            interior_scene = InteriorGSScene(
+                args_cli.data_dir, args_cli.spawn_seed, args_cli.spawn_clearance,
+                spawn_xy=(float(first["x"]), float(first["y"])),
+                spawn_yaw=float(first.get("yaw", 0.0)),
+            )
+        if scene_path is not None:
+            interior_scene.validate_path(scene_path)
+        interior_scene.configure(go2_env_cfg)
     go2_ctrl.init_base_vel_cmd(cfg.num_envs)
     env, policy = (go2_ctrl.get_rsl_flat_policy if args_cli.policy == "flat" else go2_ctrl.get_rsl_rough_policy)(go2_env_cfg)
 
@@ -84,10 +125,17 @@ def run_simulator(cfg):
 
     # Sensor setup
     sm = go2_sensors.SensorManager(cfg.num_envs, cfg.sensor.enable_lidar or cfg.sensor.enable_camera) if (cfg.sensor.enable_lidar or cfg.sensor.enable_camera or cfg.sensor.enable_imu) else None
-    lidar_annotators = sm.add_rtx_lidar() if cfg.sensor.enable_lidar else []
-    cameras = sm.add_camera(cfg.freq) if cfg.sensor.enable_camera else []
+    lidar_annotators = []
+    if cfg.sensor.enable_lidar and not interior_scene:
+        lidar_annotators = sm.add_rtx_lidar()
+    cameras = (sm.add_camera_for_scene(native_annotators=False) if interior_scene else sm.add_camera(cfg.freq)) if cfg.sensor.enable_camera else []
     if cfg.sensor.enable_imu:
         sm.add_imu(env)
+    if interior_scene and cfg.sensor.enable_lidar:
+        from env.mesh_lidar import CollisionMeshLidar
+        lidar_annotators = [CollisionMeshLidar(env)]
+    if interior_scene and sm:
+        sm.bind_pose_updates(env)
 
     # Keyboard control
     keyboard_subscription = None
@@ -115,6 +163,15 @@ def run_simulator(cfg):
     # Run simulation
     sim_step_dt = float(go2_env_cfg.sim.dt * go2_env_cfg.decimation)
     obs, _ = env.reset()
+    if interior_scene:
+        interior_scene.initialize(env, cameras, lidar_annotators, show_rgb=not args_cli.headless)
+        if dm is not None:
+            dm.interior_scene = interior_scene
+    cruise = None
+    if interior_scene and scene_path is not None and not args_cli.no_cruise:
+        from go2.path_cruise import ScenePathCruise
+        cruise = ScenePathCruise(scene_path, loop=bool(scene_path.get("loop", getattr(cfg, "path_loop", False))))
+        print(f"[INFO] Scene path cruise: {cruise.path_file} ({len(cruise.waypoints)} waypoints)", flush=True)
     validator = None
     if args_cli.self_test or args_cli.cmd_test:
         from scripts.validate_runtime import RuntimeValidator
@@ -128,6 +185,16 @@ def run_simulator(cfg):
         with torch.inference_mode():
             if sm:
                 sm.update_scan(step)
+            # Update simulated velocity before the frozen policy consumes the
+            # command observation. ROS commands retain priority in the cruise.
+            if ROS2_AVAILABLE and dm is not None:
+                dm.check_cmd_vel()
+            if cruise is not None:
+                cruise.update(env, go2_ctrl)
+            # env.step() returns a cached next-step observation. Recompute
+            # without advancing observation history so this cycle's newly
+            # selected command reaches the policy immediately.
+            obs = env.unwrapped.observation_manager.compute(update_history=False)
             # control joints
             actions = policy(obs)
 
@@ -136,7 +203,6 @@ def run_simulator(cfg):
 
             # ROS2 data (optional)
             if ROS2_AVAILABLE and dm is not None:
-                dm.check_cmd_vel()  # Native Ubuntu ROS2 file transport
                 dm.pub_ros2_data()
 
             if validator:
@@ -146,7 +212,6 @@ def run_simulator(cfg):
                 break
 
             if args_cli.max_steps and step == 60 and not args_cli.headless:
-                from pathlib import Path
                 from omni.kit.viewport.utility import capture_viewport_to_file, get_active_viewport
                 Path(args_cli.report_dir).mkdir(parents=True, exist_ok=True)
                 viewport_capture = capture_viewport_to_file(get_active_viewport(), str(Path(args_cli.report_dir).resolve()/'simulation_view.png'))
@@ -165,9 +230,6 @@ def run_simulator(cfg):
             print(f"[STEP {step}] {actual_loop_time*1000:.2f}ms RTF={rtf:.2f}", flush=True)
 
     if args_cli.max_steps:
-        import json
-        from pathlib import Path
-        import numpy as np
         from pxr import Usd, UsdGeom
         root = env.unwrapped.scene["unitree_go2"].data.root_state_w.detach().cpu().numpy()
         checks = []
@@ -200,18 +262,73 @@ def run_simulator(cfg):
             rate=(len(times)-1)/(times[-1]-times[0]) if len(times)>1 else 0
             sensor_checks.append({"name":"MID360 IMU 200Hz samples", "pass":bool(len(times)>100 and abs(rate-200)<1), "samples":len(times), "simulation_hz":float(rate)})
         checks.extend(sensor_checks)
+        mapping_checks = []
+        if interior_scene:
+            from go2.sensor_profile import PROFILE
+
+            final_xy = root[0, :2]
+            start_xy = np.asarray(interior_scene.spawn["position"][:2], dtype=np.float64)
+            displacement = float(np.linalg.norm(final_xy - start_xy))
+            cruise_command = cruise.command.astype(float).tolist() if cruise is not None else None
+            mapping_checks.append({
+                "name": "occupancy waypoint cruise moves the robot",
+                "pass": bool(cruise is not None and displacement > 0.05),
+                "start_xy": start_xy.tolist(),
+                "final_xy": final_xy.astype(float).tolist(),
+                "displacement_m": displacement,
+                "waypoints": np.asarray(cruise.waypoints, dtype=np.float64)[:, :2].tolist() if cruise is not None else [],
+                "final_body_command_vx_vy_omega": cruise_command,
+            })
+
+            scan = lidar_annotators[0].get_data() if lidar_annotators else {}
+            scan_points = np.asarray(scan.get("data", [])) if isinstance(scan, dict) else np.asarray([])
+            scan_timestamps = np.asarray(scan.get("timestamp", []), dtype=np.float64) if isinstance(scan, dict) else np.asarray([])
+            scan_span_s = float((scan_timestamps.max() - scan_timestamps.min()) / 1e9) if scan_timestamps.size else 0.0
+            mapping_checks.append({
+                "name": "collision-mesh LiDAR density and per-point time",
+                "pass": bool(len(scan_points) > 10000 and 0.09 <= scan_span_s <= 0.11),
+                "returns": int(len(scan_points)),
+                "planned_rays": int(scan.get("info", {}).get("rays", 0)) if isinstance(scan, dict) else 0,
+                "timestamp_unit": scan.get("info", {}).get("timestamp_unit") if isinstance(scan, dict) else None,
+                "timestamp_min_ns": float(scan_timestamps.min()) if scan_timestamps.size else None,
+                "timestamp_max_ns": float(scan_timestamps.max()) if scan_timestamps.size else None,
+                "timestamp_span_s": scan_span_s,
+            })
+
+            imu_times = np.asarray([s["time"] for s in dm.imu_history if s["robot"] == 0], dtype=np.float64) if dm is not None else np.asarray([])
+            imu_hz = float((len(imu_times) - 1) / (imu_times[-1] - imu_times[0])) if len(imu_times) > 1 else 0.0
+            mapping_checks.append({
+                "name": "mapping ROS profile matches expected PointCloud2/QoS contract",
+                "pass": bool(PROFILE["ros"]["pointcloud_point_step_bytes"] == 26
+                             and PROFILE["ros"]["qos_depth"] == 256
+                             and [f["name"] for f in PROFILE["ros"]["pointcloud_fields"]]
+                             == ["x", "y", "z", "intensity", "tag", "line", "timestamp"]),
+                "frame_id": PROFILE["ros"]["lidar_frame_id"],
+                "fields": PROFILE["ros"]["pointcloud_fields"],
+                "point_step_bytes": PROFILE["ros"]["pointcloud_point_step_bytes"],
+                "qos": {"reliability": "reliable", "depth": PROFILE["ros"]["qos_depth"], "durability": "volatile"},
+                "imu_frame_id": PROFILE["ros"]["imu_frame_id"],
+                "imu_hz": imu_hz,
+            })
         meshes = 0
         warehouse = omni.usd.get_context().get_stage().GetPrimAtPath("/World/Warehouse")
         if warehouse and warehouse.IsValid():
             meshes = sum(prim.IsA(UsdGeom.Mesh) for prim in Usd.PrimRange(warehouse))
         result = {"scene": cfg.env_name, "num_envs": cfg.num_envs, "policy": args_cli.policy,
                   "steps": step, "control_checks": checks, "root_states": root.tolist(), "warehouse_meshes": meshes,
-                  "pass": bool(np.isfinite(root).all() and (root[:,2] > .2).all() and ("warehouse" not in cfg.env_name or meshes > 0) and all(c["pass"] for c in checks))}
+                  "mapping_checks": mapping_checks,
+                  "pass": bool(np.isfinite(root).all() and (root[:,2] > .2).all()
+                               and ("warehouse" not in cfg.env_name or meshes > 0)
+                               and all(c["pass"] for c in checks + mapping_checks))}
         directory = Path(args_cli.report_dir)
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "smoke.json").write_text(json.dumps(result, indent=2))
     if ROS2_AVAILABLE and dm is not None:
         dm.destroy_node()
+    if interior_scene:
+        interior_scene.save(args_cli.report_dir)
+    if sm:
+        sm.close()
     if validator:
         validator.finish()
     env.close()
@@ -223,4 +340,3 @@ def run_simulator(cfg):
 
 if __name__ == "__main__":
     run_simulator()
-    

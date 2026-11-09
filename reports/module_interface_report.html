@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Go2 三模块接口与仿真符合性报告</title>
+  <style>
+    :root { --ink:#17202a; --muted:#596875; --paper:#f7f4ee; --panel:#fffdf9; --line:#d9d1c5; --red:#b5483e; --blue:#28617c; --teal:#2f7770; --gold:#b9852d; --green:#2d7651; --shadow:0 12px 28px rgba(33,38,42,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:linear-gradient(135deg,#f3eee5 0%,#fbfaf7 48%,#edf2ef 100%); font:15px/1.65 "Noto Sans CJK SC","Microsoft YaHei",sans-serif; }
+    main { width:min(1440px,calc(100% - 32px)); margin:0 auto; padding:30px 0 70px; }
+    header { padding:32px 36px 28px; border:1px solid var(--line); border-top:7px solid var(--red); background:rgba(255,253,249,.9); box-shadow:var(--shadow); }
+    h1,h2,h3 { font-family:"Noto Serif CJK SC","Songti SC",serif; letter-spacing:0; line-height:1.25; }
+    h1 { margin:0 0 10px; font-size:42px; color:#263845; }
+    h2 { margin:42px 0 16px; padding-left:14px; border-left:5px solid var(--blue); font-size:28px; }
+    h3 { margin:26px 0 10px; font-size:20px; color:#314d5a; }
+    p { margin:10px 0; }
+    .lede { max-width:980px; color:#394852; font-size:17px; }
+    .meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+    .pill { display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border:1px solid var(--line); background:#f5eee4; color:#4c3f33; font-size:13px; }
+    .pill strong { color:var(--red); }
+    .callout { margin:22px 0; padding:16px 18px; border-left:5px solid var(--gold); background:#fff7df; }
+    .callout.critical { border-color:var(--red); background:#fff0ed; }
+    .callout.ok { border-color:var(--green); background:#edf8f0; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+    .card { padding:18px; border:1px solid var(--line); background:var(--panel); box-shadow:0 5px 16px rgba(33,38,42,.045); }
+    .card h3 { margin-top:0; }
+    .status { display:inline-block; padding:3px 8px; font-size:12px; font-weight:700; letter-spacing:.04em; }
+    .pass { color:#185c3a; background:#dff2e6; }
+    .part { color:#785510; background:#ffedbf; }
+    .todo { color:#893d35; background:#ffe0db; }
+    .source { color:#586771; font-size:12px; }
+    table { width:100%; border-collapse:collapse; margin:12px 0 22px; background:var(--panel); border:1px solid var(--line); }
+    th,td { padding:10px 11px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { background:#eaf0f1; color:#294956; font-weight:700; }
+    tr:last-child td { border-bottom:0; }
+    code { padding:1px 4px; background:#eef1f0; color:#8b3e35; font-family:"DejaVu Sans Mono",monospace; font-size:.92em; }
+    pre { overflow:auto; padding:17px; border:1px solid #cbd5d3; background:#203139; color:#e8f1ef; line-height:1.45; }
+    .diagram { padding:14px; overflow:auto; border:1px solid var(--line); background:#fffdf9; }
+    svg { display:block; width:100%; min-width:760px; height:auto; }
+    .legend { display:flex; flex-wrap:wrap; gap:16px; margin:8px 0 18px; color:var(--muted); font-size:13px; }
+    .legend span::before { content:""; display:inline-block; width:12px; height:12px; margin-right:5px; vertical-align:-1px; background:var(--blue); }
+    .legend .sim::before { background:var(--teal); } .legend .algo::before { background:var(--blue); } .legend .nav::before { background:var(--red); } .legend .risk::before { background:var(--gold); }
+    figure { margin:0; padding:12px; border:1px solid var(--line); background:var(--panel); }
+    figure img { display:block; width:100%; height:auto; max-height:380px; object-fit:contain; background:#e6e8e8; }
+    figcaption { padding:9px 2px 2px; color:var(--muted); font-size:13px; }
+    .small { font-size:13px; color:var(--muted); }
+    footer { margin-top:44px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    @media (max-width:760px) { main { width:min(100% - 18px,1440px); padding-top:10px; } header { padding:24px 20px; } h1 { font-size:32px; } h2 { font-size:23px; } th,td { padding:8px; font-size:13px; } .diagram { margin-left:-2px; margin-right:-2px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Go2 三模块接口与仿真符合性报告</h1>
+    <p class="lede">本报告梳理 Isaac Sim 仿真、FAST-LIVO2/SC-PGO 建图与 localizer 定位、NeuPAN 导航三条链路的架构、输入输出、参数、坐标系和真实数据差异。结论严格区分源码配置、真实 rosbag、仿真验收和未做的端到端测试。</p>
+    <div class="meta"><span class="pill"><strong>结论</strong> 传感器/低层通过；全链路未通过</span><span class="pill"><strong>仿真证据</strong> 45/45 checks</span><span class="pill"><strong>真实基准</strong> MID360 PointCloud2 + IMU 200 Hz</span><span class="pill"><strong>日期</strong> 2026-11-09</span></div>
+  </header>
+
+  <div class="callout critical"><b>阅读结论：</b>当前仿真已经验证 D435、MID360 近似点云、200 Hz IMU、ROS2 transport、速度命令和物理运动，但还没有证明仿真数据能被 FAST-LIVO2 建图、localizer 定位、导航 processor 投影成 <code>/scan</code>，也没有完成 <code>/cmd_vel2</code> 驱动仿真的闭环。因此不能把当前状态称为三模块全链路通过。</div>
+
+  <h2>1. 三模块关系</h2>
+  <div class="legend"><span class="sim">仿真生成与运动</span><span class="algo">建图/定位算法</span><span class="nav">导航与命令</span><span class="risk">待验证接口</span></div>
+  <div class="diagram">
+    <svg viewBox="0 0 1240 620" role="img" aria-label="三模块数据流图">
+      <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#526872"/></marker><filter id="shadow"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".13"/></filter></defs>
+      <rect x="35" y="28" width="1170" height="150" rx="8" fill="#e8f2ef" stroke="#2f7770" stroke-width="2" filter="url(#shadow)"/>
+      <text x="65" y="62" font-size="24" font-weight="700" fill="#245f5a">仿真模块 · Isaac Sim 5.1 + Isaac Lab + Go2</text>
+      <text x="65" y="92" font-size="17" fill="#29434a">物理运动 / D435 / MID360近似点云 / MID360 IMU / ROS2文件桥</text>
+      <rect x="65" y="112" width="238" height="40" rx="6" fill="#fffdf9" stroke="#9bbdb7"/><text x="184" y="137" text-anchor="middle" font-size="16">/livox/lidar · PointCloud2</text>
+      <rect x="323" y="112" width="190" height="40" rx="6" fill="#fffdf9" stroke="#9bbdb7"/><text x="418" y="137" text-anchor="middle" font-size="16">/livox/imu · Imu</text>
+      <rect x="533" y="112" width="232" height="40" rx="6" fill="#fffdf9" stroke="#9bbdb7"/><text x="649" y="137" text-anchor="middle" font-size="16">/unitree_go2/odom + TF</text>
+      <rect x="785" y="112" width="380" height="40" rx="6" fill="#fffdf9" stroke="#9bbdb7"/><text x="975" y="137" text-anchor="middle" font-size="16">当前控制入口：/unitree_go2/cmd_vel</text>
+      <line x1="300" y1="178" x2="300" y2="245" stroke="#526872" stroke-width="2" marker-end="url(#arrow)"/><line x1="418" y1="178" x2="418" y2="245" stroke="#526872" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="35" y="245" width="520" height="155" rx="8" fill="#e8f0f5" stroke="#28617c" stroke-width="2" filter="url(#shadow)"/>
+      <text x="65" y="280" font-size="24" font-weight="700" fill="#255a74">建图模块 · FAST-LIVO2 + SC-PGO</text>
+      <text x="65" y="314" font-size="16" fill="#29434a">紧耦合 LiDAR-IMU 前端 + 回环/全局优化</text><text x="65" y="344" font-size="16" fill="#29434a">/aft_mapped_to_init · /cloud_registered_local</text><text x="65" y="374" font-size="16" fill="#29434a">GlobalMap.pcd · Scans/ · opti_poses.txt</text>
+      <line x1="555" y1="322" x2="685" y2="322" stroke="#526872" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="685" y="245" width="520" height="155" rx="8" fill="#e8f0f5" stroke="#28617c" stroke-width="2" filter="url(#shadow)"/>
+      <text x="715" y="280" font-size="24" font-weight="700" fill="#255a74">定位模块 · GlobalMap匹配</text>
+      <text x="715" y="314" font-size="16" fill="#29434a">先验 GlobalMap.pcd + 实时局部点云/IMU</text><text x="715" y="344" font-size="16" fill="#29434a">/initialpose → /slam/lidar_pose</text><text x="715" y="374" font-size="16" fill="#29434a">map frame；外部脚本转 map → body TF</text>
+      <line x1="945" y1="400" x2="945" y2="458" stroke="#526872" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="35" y="458" width="1170" height="125" rx="8" fill="#f8e9e5" stroke="#b5483e" stroke-width="2" filter="url(#shadow)"/>
+      <text x="65" y="493" font-size="24" font-weight="700" fill="#963f37">导航模块 · processor + NeuPAN/track2</text>
+      <text x="65" y="528" font-size="16" fill="#4e3733">/livox/lidar → /livox/points_raw + /scan；/slam/lidar_pose + /clicked_path → /cmd_vel2</text>
+      <text x="65" y="558" font-size="16" fill="#963f37">缺口：/cmd_vel2 尚未适配到仿真当前入口 /unitree_go2/cmd_vel；/scan 和真实定位输出也尚未端到端验证</text>
+    </svg>
+  </div>
+  <p class="source">证据：仿真 <code>ros2/go2_file_bridge_wsl2.py</code>；建图配置 <code>mid360.yaml</code>；定位配置 <code>localizer.yaml</code>；导航启动链 <code>sim_platform_start_verify.sh</code>。</p>
+
+  <h2>2. 各模块接口</h2>
+  <div class="grid">
+    <section class="card"><h3>仿真模块</h3><p><b>职责：</b>提供物理世界、机器人状态、传感器数据和低层命令入口。</p><p><b>输出：</b><code>/livox/lidar</code>（PointCloud2，10 Hz，xyz，frame 为 <code>unitree_go2/lidar</code>）、<code>/livox/imu</code>（Imu，200 Hz，frame 为 <code>unitree_go2/mid360_imu</code>）、<code>/unitree_go2/odom</code>、图像、TF。</p><p><b>限制：</b>当前没有 <code>/scan</code>、<code>/slam/lidar_pose</code>，也没有订阅 <code>/cmd_vel2</code>。</p></section>
+    <section class="card"><h3>建图与定位</h3><p><b>建图：</b>FAST-LIVO2 使用 LiDAR + IMU 紧耦合，SC-PGO 做关键帧回环和全局优化，输出 <code>GlobalMap.pcd</code>。</p><p><b>定位：</b>加载先验地图，使用实时局部点云/IMU和 <code>/initialpose</code> 初始化，输出 map 坐标下的 <code>/slam/lidar_pose</code>。</p><p><b>当前配置：</b><code>img_en=0</code>、<code>lidar_type=7</code>、<code>scan_line=4</code>、wheel odom关闭。</p></section>
+    <section class="card"><h3>导航模块</h3><p><b>前端：</b>processor 每0.1 s累积点云，按 body-lidar 外参转换并投影为约1440束 <code>LaserScan</code>。</p><p><b>规划：</b>track2 订阅 <code>/slam/lidar_pose</code>、<code>/scan</code>、<code>/clicked_path</code>，用 NeuPAN 输出 <code>/cmd_vel2</code>。</p><p><b>命令：</b><code>[linear.x, linear.y, angular.z] = [vx, vy, omega]</code>，规划频率默认10 Hz。</p></section>
+  </div>
+
+  <h3>真实模块输入参数</h3>
+  <table><thead><tr><th>输入</th><th>消息/频率</th><th>关键字段和参数</th><th>来源/状态</th></tr></thead><tbody>
+    <tr><td><code>/livox/lidar</code></td><td><code>sensor_msgs/msg/PointCloud2</code>，约10 Hz</td><td>实测字段 <code>x,y,z,intensity,tag,line,timestamp</code>；FAST-LIVO2为 <code>lidar_type=7</code>、<code>scan_line=4</code>、<code>blind=0.1 m</code></td><td>真实建图 bag、Mid-360导航 bag已确认；旧文档写 CustomMsg</td></tr>
+    <tr><td><code>/livox/imu</code></td><td><code>sensor_msgs/msg/Imu</code>，约200 Hz</td><td><code>imu_int_frame=30</code>；<code>acc_cov=0.5</code>、<code>gyr_cov=0.3</code>；时间偏移0</td><td>真实 bag已确认；frame 样本为 <code>livox_frame</code></td></tr>
+    <tr><td><code>/initialpose</code></td><td><code>PoseWithCovarianceStamped</code></td><td>RViz 2D Pose Estimate；在 <code>map</code> 中给出初始位置和朝向</td><td>定位初始化入口</td></tr>
+    <tr><td><code>/scan</code></td><td><code>sensor_msgs/msg/LaserScan</code>，processor约10 Hz</td><td>角度[-pi,pi]，增量约0.25°，范围0.1-100 m，高度[-0.01,0.7] m，累计0.1 s</td><td>导航 processor 源码确认；仿真未验证</td></tr>
+    <tr><td><code>/clicked_path</code></td><td><code>nav_msgs/msg/Path</code>，默认10 Hz</td><td>frame 默认 <code>map</code>；JSON waypoint按 segment length 插值</td><td>路径发布器源码确认</td></tr>
+    <tr><td>规划器参数</td><td>YAML</td><td><code>step_time=0.1 s</code>，<code>max_speed=[0.4,0.1,0.6]</code>，mecanum footprint约0.7x0.35 m</td><td>导航 YAML 确认</td></tr>
+    <tr><td>localizer参数</td><td>YAML</td><td><code>cloud_topic=/cloud_registered_local</code>，<code>odom_topic=/aft_mapped_to_init</code>，<code>imu_odom_topic=/LIVO2/imu_propagate</code>，map/local frame为map/lidar，配置update_hz=20，GICP开启</td><td>运行配置确认；频率为配置值，非本次实测值</td></tr>
+  </tbody></table>
+
+  <h2>3. 参数对比</h2>
+  <table><thead><tr><th>参数</th><th>建图/定位基准</th><th>导航链路</th><th>仿真当前值</th></tr></thead><tbody>
+    <tr><td>LiDAR消息类型</td><td>实测 PointCloud2；<code>mid360.yaml lidar_type=7</code></td><td>processor 同时兼容 CustomMsg/PointCloud2，PointCloud2只读xyz</td><td>PointCloud2，只发xyz；消息大类正确，字段待补/验证</td></tr>
+    <tr><td>LiDAR/IMU频率</td><td>约10/200 Hz</td><td>点云窗口0.1 s；规划器10 Hz</td><td>点云约10.009 Hz，IMU约200 Hz；仿真时间证据通过</td></tr>
+    <tr><td>相机</td><td>配置1280x1024，scale 0.5，缩放后约640x512；<code>img_en=0</code></td><td>当前导航不直接使用相机</td><td>RGB 640x360、depth 848x480、30 Hz；当前不阻塞 lidar-only 主链</td></tr>
+    <tr><td>LiDAR frame</td><td>真实样本 <code>livox_frame</code></td><td>raw保留传感器 frame；aligned 和 scan 写为 <code>body</code></td><td><code>unitree_go2/lidar</code>；需显式 frame/TF 适配</td></tr>
+    <tr><td>body-lidar外参</td><td>mapping 内部另有 lidar-IMU <code>[-0.011,-0.02329,0.04412]</code>、R=I</td><td><code>[0.187,0,0.0803]</code>，绕Y 13°</td><td>LiDAR位置 <code>[0.2,0,0.2]</code>，rpy全0；不等价</td></tr>
+    <tr><td>IMU语义</td><td>真实样本 orientation identity、covariance 0</td><td>导航不直接消费 IMU，定位/建图消费</td><td>orientation unavailable，covariance[0]=-1；加速度含重力，理想无噪声</td></tr>
+    <tr><td>全局坐标</td><td><code>map</code>由建图运行定义</td><td>pose/path/map使用 <code>map</code>，机器人 TF使用 <code>body</code></td><td>真值使用 <code>odom</code> + <code>unitree_go2/base_link</code>；不能直接当 map</td></tr>
+  </tbody></table>
+
+  <h2>4. 差异分级</h2>
+  <table><thead><tr><th>等级</th><th>问题</th><th>判断</th><th>仿真侧动作</th></tr></thead><tbody>
+    <tr><td><span class="status todo">高</span></td><td>没有真实 localizer 输出和导航命令闭环</td><td>当前无法证明定位和导航功能</td><td>先跑 FAST-LIVO2 → map → localizer → processor → NeuPAN，再接命令适配</td></tr>
+    <tr><td><span class="status todo">高</span></td><td>frame/TF不一致</td><td>topic名一致不代表坐标语义一致，可能造成重复变换或定位失败</td><td>提供 map/body/lidar_livox 适配，保留 raw/aligned 的明确 frame</td></tr>
+    <tr><td><span class="status part">中高</span></td><td>仿真点云只有xyz</td><td>processor可读，但 FAST-LIVO2深层时间/扫描线依赖尚未实测</td><td>先做实测；失败时补 timestamp、line、intensity、tag 字段或适配器</td></tr>
+    <tr><td><span class="status part">中</span></td><td>外参不同</td><td>mapping lidar-IMU、navigation body-lidar、simulation mount 是三种语义</td><td>配置集中化并记录标定来源，不能互相覆盖</td></tr>
+    <tr><td><span class="status part">中</span></td><td>相机内参/分辨率不同</td><td>当前 img_en=0，暂不阻塞；启用视觉时会直接影响投影</td><td>视觉模式单独标定 D435 RGB/深度、畸变和同步</td></tr>
+    <tr><td><span class="status part">中</span></td><td>仿真 LiDAR publisher depth=1，真实 bag depth=256</td><td>慢消费者时存在丢帧风险</td><td>全链路运行时检查频率、时间戳、队列和处理耗时</td></tr>
+    <tr><td><span class="status todo">高</span></td><td>track2 位姿外参注释与实现不一致；Pose-to-TF 又将定位 pose 直接当作 body pose</td><td><code>_get_robot_pose()</code> 中 dx/dy/yaw offset 都是0；若输入 pose 是 LiDAR frame，则 planner/body TF 存在坐标语义风险</td><td>不改只读导航代码；通过接口定义和仿真适配器验证 LiDAR pose 到 body pose 的转换是否需要且只做一次</td></tr>
+  </tbody></table>
+
+  <h2>5. 仿真证据图片</h2>
+  <div class="grid">
+    <figure><img src="our-go2/simulation_view.png" alt="Isaac Sim 仿真视图"><figcaption>Isaac Sim 仿真场景与 Go2 运动视图。</figcaption></figure>
+    <figure><img src="our-go2/color_image.png" alt="D435 RGB"><figcaption>仿真 D435 RGB：640x360，rgb8。</figcaption></figure>
+    <figure><img src="our-go2/depth_image.png" alt="D435 depth"><figcaption>仿真 D435 depth：848x480，32FC1 米制深度。</figcaption></figure>
+    <figure><img src="our-go2/point_cloud.png" alt="MID360 point cloud"><figcaption>仿真 MID360 RTX 近似点云；非厂商专有扫描轨迹复刻。</figcaption></figure>
+    <figure><img src="our-go2/trajectory.png" alt="Go2 trajectory"><figcaption>仿真运动轨迹和低层运动验收证据。</figcaption></figure>
+  </div>
+
+  <h2>6. 符合性矩阵</h2>
+  <table><thead><tr><th>检查项</th><th>结果</th><th>证据与边界</th></tr></thead><tbody>
+    <tr><td>PointCloud2 topic大类</td><td><span class="status part">部分符合</span></td><td>与真实 Mid-360 bag、<code>lidar_type=7</code>一致；仿真字段只有xyz，frame未对齐。</td></tr>
+    <tr><td>LiDAR 10 Hz</td><td><span class="status pass">仿真已验收</span></td><td>约10.009 Hz；尚不等于 FAST-LIVO2已处理成功。</td></tr>
+    <tr><td>IMU 200 Hz</td><td><span class="status part">频率通过</span></td><td>约200 Hz且无大于5 ms间隔；噪声、covariance和orientation语义不同。</td></tr>
+    <tr><td>D435图像</td><td><span class="status part">仿真已验收</span></td><td>渲染和内参自洽，但和视觉配置不一致；当前 <code>img_en=0</code>。</td></tr>
+    <tr><td>FAST-LIVO2建图</td><td><span class="status todo">未验证</span></td><td>尚未用仿真点云/IMU生成 <code>GlobalMap.pcd</code>。</td></tr>
+    <tr><td>localizer定位</td><td><span class="status todo">未验证</span></td><td>尚未完成 GlobalMap + initialpose → <code>/slam/lidar_pose</code>。</td></tr>
+    <tr><td>processor与/scan</td><td><span class="status todo">未验证</span></td><td>尚未验证仿真字段、外参、高度过滤、frame和窗口频率。</td></tr>
+    <tr><td>NeuPAN导航闭环</td><td><span class="status todo">未验证</span></td><td>缺少真实定位输出和可消费的scan；未完成路径到命令闭环。</td></tr>
+    <tr><td>/cmd_vel2驱动仿真</td><td><span class="status todo">未验证</span></td><td>仿真当前入口是 <code>/unitree_go2/cmd_vel</code>，需要正式适配器和watchdog。</td></tr>
+    <tr><td>真实地图与仿真环境一致</td><td><span class="status todo">不满足</span></td><td>当前障碍物场景与真实 <code>GlobalMap.pcd</code>不是同一几何环境。</td></tr>
+  </tbody></table>
+
+  <h2>7. 建议的下一步闭环</h2>
+  <div class="grid">
+    <div class="card"><h3>01 · 可重复巡航</h3><p>增加固定 waypoint、矩形闭环或预设走廊控制器，输出仿真控制入口的三自由度速度，并保存轨迹、仿真时间和传感器时间。</p></div>
+    <div class="card"><h3>02 · 先验证建图</h3><p>使用 <code>PointCloud2 + /livox/imu</code> 启动 FAST-LIVO2。若因字段或时间语义失败，再针对 <code>timestamp/line/intensity/tag</code> 做最小适配。</p></div>
+    <div class="card"><h3>03 · 再验证定位</h3><p>加载仿真生成的 GlobalMap，确认 <code>/initialpose</code>、<code>map→body</code> TF、<code>/slam/lidar_pose</code> 和 <code>/slam/points</code> 的坐标一致性。</p></div>
+    <div class="card"><h3>04 · 最后接导航</h3><p>运行 processor 生成 <code>/scan</code>，启动 NeuPAN，再实现 <code>/cmd_vel2 → /unitree_go2/cmd_vel</code>、限幅和超时停车，记录闭环结果。</p></div>
+  </div>
+
+  <footer>
+    <p><b>主要证据路径：</b>仿真 <code>reports/our-go2/results.json</code>、<code>reports/our-go2/ros_topics.json</code>；建图 bag <code>/data/Download/full_20261021_193634</code>；建图定位说明 <code>/home/foxy_box/w00987388/仿真环境下建图+定位运行pipeline.md</code>；导航自验 <code>/home/foxy_box/root/sim_platform_start_verify.sh</code>。</p>
+    <p>本报告只新增在仿真仓库中，未修改建图定位和导航模块源码、配置或真实数据。</p>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,8 +1,27 @@
 {
   "profile": "our-go2-d435-mid360",
-  "extrinsics_status": "Existing mount positions retained by user request; not hardware-calibrated",
-  "camera": {"model": "RealSense D435", "position": [0.4, 0.0, 0.2], "rpy_deg": [0,0,0], "rgb_resolution": [640,360], "depth_resolution": [848,480], "rgb_hfov_deg": 69.0, "depth_hfov_deg": 87.0, "fps": 30, "depth_min_m": 0.2, "depth_max_m": 10.0, "stereo_baseline_m": 0.05, "model_limit": "Ideal pinhole + RTX geometric depth; no active-stereo matching, emitter, multipath or calibrated noise"},
-  "lidar": {"model": "Livox MID360", "position": [0.2,0.0,0.2], "rpy_deg": [0,0,0], "azimuth_deg": [-180,180], "elevation_deg": [-7,52], "min_range_m": 0.1, "max_range_m": 70.0, "scan_hz": 10, "points_per_second": 200000, "model_limit": "Procedural nonrepeating angular coverage approximation, not the proprietary Livox scan trajectory; idealized reflectivity-independent 70m cap"},
-  "imu": {"model": "MID360 integrated ICM40609", "position_in_lidar": [0,0,0], "rotation_wxyz_in_lidar": [1,0,0,0], "hz": 200, "gravity_m_s2": 9.81, "model_limit": "Physics sensor, ideal noise-free gyro and specific force; IMU-to-LiDAR transform assumed identity, orientation unavailable on ROS"},
+  "extrinsics_status": "LiDAR mount follows the navigation processor body-to-lidar transform; IMU offset follows FAST-LIVO2; camera mount remains a simulation placeholder",
+  "ros": {
+    "lidar_topic": "/livox/lidar",
+    "imu_topic": "/livox/imu",
+    "lidar_frame_id": "livox_frame",
+    "imu_frame_id": "livox_frame",
+    "body_frame_id": "body",
+    "pointcloud_point_step_bytes": 26,
+    "pointcloud_fields": [
+      {"name": "x", "offset": 0, "datatype": "FLOAT32"},
+      {"name": "y", "offset": 4, "datatype": "FLOAT32"},
+      {"name": "z", "offset": 8, "datatype": "FLOAT32"},
+      {"name": "intensity", "offset": 12, "datatype": "FLOAT32"},
+      {"name": "tag", "offset": 16, "datatype": "UINT8"},
+      {"name": "line", "offset": 17, "datatype": "UINT8"},
+      {"name": "timestamp", "offset": 18, "datatype": "FLOAT64", "unit": "nanoseconds"}
+    ],
+    "qos_depth": 256
+  },
+  "camera": {"model": "RealSense D435", "position": [0.4, 0.0, 0.2], "rpy_deg": [0,0,0], "rgb_resolution": [640,360], "depth_resolution": [848,480], "rgb_hfov_deg": 69.0, "depth_hfov_deg": 87.0, "fps": 30, "depth_min_m": 0.2, "depth_max_m": 10.0, "stereo_baseline_m": 0.05, "model_limit": "Ideal pinhole + geometric depth; no active-stereo matching, emitter, multipath or calibrated noise"},
+  "lidar": {"model": "Livox MID360", "position": [0.187,0.0,0.0803], "rpy_deg": [0,13,0], "azimuth_deg": [-180,180], "elevation_deg": [-7,52], "min_range_m": 0.1, "max_range_m": 70.0, "scan_hz": 10, "scan_period_s": 0.1, "points_per_second": 200000, "point_filter_num": 3, "filter_size_surf_m": 0.5, "lidar_type": 7, "scan_line": 4, "blind_m": 0.1, "model_limit": "Procedural nonrepeating angular coverage approximation; no proprietary Livox scan trajectory, motion distortion or reflectance model"},
+  "imu": {"model": "MID360 integrated ICM40609", "position_in_lidar": [-0.011,-0.02329,0.04412], "position": [0.18620677,-0.02329,0.12576367], "rotation_wxyz_in_lidar": [1,0,0,0], "rotation_wxyz_in_body": [0.9935718557,0,0.1132032138,0], "hz": 200, "imu_int_frame": 30, "acc_cov": 0.5, "gyr_cov": 0.3, "b_acc_cov": 0.0001, "b_gyr_cov": 0.0001, "gravity_m_s2": 9.81, "mount_source": "body->lidar_livox [0.187,0,0.0803] + R_y(13 deg) * fast_livo lidar->imu translation", "model_limit": "Physics sensor, ideal noise-free gyro and specific force; orientation is marked unavailable on ROS"},
+  "calibration": {"source": "fast_livo mid360.yaml", "lidar_to_imu_translation_m": [-0.011,-0.02329,0.04412], "lidar_to_imu_rotation": [1,0,0,0,1,0,0,0,1]},
   "sources": ["https://www.livoxtech.com/cn/mid-360/specs", "https://github.com/Livox-SDK/Livox-SDK2/blob/master/include/livox_lidar_api.h", "https://www.realsenseai.com/products/stereo-depth-camera-d435/", "https://dev.realsenseai.com/download/42003/"]
 }

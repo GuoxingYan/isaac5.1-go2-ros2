@@ -53,8 +53,11 @@ class RobotDataManager:
         rs = robot.data.root_state_w.detach().cpu().numpy()
         d = {'timestamp':time.time(), 'simulation_time':float(self.env.unwrapped.sim.current_time), 'frame':self.step_count, 'num_envs':len(rs),
              'robots':rs.tolist(), 'odom':{'position':rs[0,:3].tolist(),
-             'orientation':rs[0,[4,5,6,3]].tolist(), 'frame_id':'odom', 'child_frame_id':'unitree_go2/base_link'}}
+             'orientation':rs[0,[4,5,6,3]].tolist(), 'frame_id':'odom',
+             'child_frame_id':PROFILE['ros'].get('body_frame_id', 'body')}}
         d['sensor_profile']=PROFILE
+        if hasattr(self, 'interior_scene'):
+            d['scene_sources'] = self.interior_scene.evidence
         sim_time=d['simulation_time']
         slot = self.step_count % 8
         d.update(self.previous_sensor_data)
@@ -103,10 +106,10 @@ class RobotDataManager:
                 pc=self.lidar_annotators[0].get_data()
                 pts=pc.get('data') if isinstance(pc,dict) else pc
                 if isinstance(pts,np.ndarray) and pts.ndim==2 and pts.shape[1]>=3 and len(pts):
-                    pts=pts[:,:3].astype(np.float32)
-                    ranges=np.linalg.norm(pts,axis=1)
-                    valid=np.isfinite(pts).all(axis=1)&(ranges>=.1)&(ranges<=70.)
-                    pts=pts[valid]
+                    raw_pts=pts[:,:3].astype(np.float32)
+                    ranges=np.linalg.norm(raw_pts,axis=1)
+                    valid=np.isfinite(raw_pts).all(axis=1)&(ranges>=.1)&(ranges<=70.)
+                    pts=raw_pts[valid]
                     name=f'lidar_{slot}.npy'
                     np.save(DATA_DIR/name,pts)
                     d['point_cloud']=name
@@ -114,14 +117,15 @@ class RobotDataManager:
                     self.lidar_history.append(sim_time)
                     if isinstance(pc,dict):
                         aux={}
-                        for key in ['intensity','timestamp','distance','azimuth','elevation']:
+                        for key in ['intensity','timestamp','tag','line','distance','azimuth','elevation']:
                             value=pc.get(key)
                             if isinstance(value,np.ndarray) and value.size:
-                                aux[key]=value
+                                aux[key]=value[valid] if len(value) == len(valid) else value
                         if aux:
                             aux_name=f'lidar_aux_{slot}.npz'
                             np.savez(DATA_DIR/aux_name,**aux)
                             d['lidar_aux']=aux_name
+                            d['lidar_timestamp_unit'] = 'nanoseconds' if 'timestamp' in aux else None
                     self.errors.pop('lidar_format',None)
                 elif isinstance(pc,dict):
                     self.errors['lidar_format']=str({k:(getattr(v,'shape',type(v).__name__)) for k,v in pc.items()})
@@ -136,7 +140,7 @@ class RobotDataManager:
                     self.last_imu_time[index]=sample['time']
             d['imu_samples']=[s for s in self.sensor_manager.imu_samples if s['time']>sim_time-1.0]
             self.imu_history.extend(fresh)
-        self.previous_sensor_data={k:v for k,v in d.items() if k in ['color_image','intrinsics','depth_intrinsics','camera_time','depth_image','depth_encoding','semantic','semantic_labels','rgbd_point_cloud','point_cloud','lidar_time','lidar_aux']}
+        self.previous_sensor_data={k:v for k,v in d.items() if k in ['color_image','intrinsics','depth_intrinsics','camera_time','depth_image','depth_encoding','semantic','semantic_labels','rgbd_point_cloud','point_cloud','lidar_time','lidar_aux','lidar_timestamp_unit']}
         d['errors']=self.errors
         tmp=DATA_DIR/'data.json.tmp'
         tmp.write_text(json.dumps(d))

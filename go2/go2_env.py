@@ -46,7 +46,10 @@ class Go2SimCfg(InteractiveSceneCfg):
     # Go2 Robot
     unitree_go2: ArticulationCfg = UNITREE_GO2_CFG.replace(prim_path="{ENV_REGEX_NS}/Go2")
     mid360_imu = ImuCfg(prim_path="{ENV_REGEX_NS}/Go2/base",update_period=.005,
-        offset=ImuCfg.OffsetCfg(pos=tuple(float(x) for x in (np.array(PROFILE['lidar']['position'])+np.array(PROFILE['imu']['position_in_lidar']))),rot=tuple(PROFILE['imu']['rotation_wxyz_in_lidar'])), gravity_bias=(0.,0.,PROFILE['imu']['gravity_m_s2']))
+        offset=ImuCfg.OffsetCfg(pos=tuple(float(x) for x in PROFILE['imu']['position']),
+                                 rot=tuple(PROFILE['imu'].get('rotation_wxyz_in_body',
+                                                              PROFILE['imu']['rotation_wxyz_in_lidar']))),
+        gravity_bias=(0.,0.,PROFILE['imu']['gravity_m_s2']))
     # Go2 foot contact sensor
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Go2/.*_foot", history_length=3, track_air_time=True)
 

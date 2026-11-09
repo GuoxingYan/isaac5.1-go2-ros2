@@ -1,0 +1,108 @@
+{
+  "scene_id": "839873",
+  "coordinate_frame": "data/ source frame; no recentering",
+  "gaussian_source": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/839873.usdz",
+  "collision_source": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/839873_collision.usd",
+  "collision_runtime_asset": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/839873_collision.usd",
+  "occupancy_image": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/occupancy.png",
+  "occupancy_metadata": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/occupancy .json",
+  "asset_sha256": {
+    "gaussian": "d2edbea3b040b9d5e0eef7564c689913c147eba0994619679f40d4bbc44e6a02",
+    "collision": "26740ececdf1bf7ea2b597c50a5c72f2b2677b598d6f35fa8ac548f35871deaa"
+  },
+  "asset_transform": "identity; source data/ coordinates are used as authored",
+  "synthetic_ground": false,
+  "spawn": {
+    "mode": "path_start",
+    "seed": 325111084074491455486297294526523860040,
+    "pixel_row_col": [
+      29,
+      102
+    ],
+    "position": [
+      1.4050000026822091,
+      -9.964999580383301,
+      0.42
+    ],
+    "yaw_rad": 1.5707963267948966,
+    "clearance_m": 1.05,
+    "required_clearance_m": 0.45,
+    "occupancy_value": 255,
+    "mapping": {
+      "scale": 0.05,
+      "origin_xy": [
+        -0.11999999731779099,
+        -11.4399995803833
+      ]
+    }
+  },
+  "mesh_count": 60,
+  "collision_api_meshes": 60,
+  "mesh_collision_api_meshes": 60,
+  "support": {
+    "hit": true,
+    "position": [
+      1.4050000026822091,
+      -9.964999580383301,
+      0.0
+    ],
+    "normal": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "distance": 1.0,
+    "collision": "authored 839873_collision.usd triangle query",
+    "rigidBody": "static mesh asset",
+    "physx_scene_query": "not used for readiness; USD mesh query is deterministic"
+  },
+  "rgb_source": "839873.usdz NuRec Gaussians",
+  "metric_source": "839873_collision.usd triangles",
+  "renderer": {
+    "source": "/data/projects/Sim2Real/codex_5.1/isaac5.1-go2-ros2/data/839873.usdz",
+    "member": "839873.nurec",
+    "gaussians": 1445429,
+    "sh_degree": 3,
+    "translation_xyz_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "renderer": "gsplat CUDA anisotropic 3D Gaussian rasterization",
+    "coordinate_frame": "data/ source frame; no recentering or translation",
+    "sha256": "d2edbea3b040b9d5e0eef7564c689913c147eba0994619679f40d4bbc44e6a02",
+    "limits": "RGB only; collision mesh supplies metric depth and LiDAR."
+  },
+  "last_camera_pose": {
+    "position": [
+      1.4002505540847778,
+      -9.171138763427734,
+      0.4853900671005249
+    ],
+    "quaternion_wxyz": [
+      0.7144104838371277,
+      -0.698925793170929,
+      0.03345261886715889,
+      -0.0011524937581270933
+    ],
+    "intrinsics": [
+      [
+        465.6028747558594,
+        0.0,
+        319.5
+      ],
+      [
+        0.0,
+        465.6028747558594,
+        179.5
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "rendered_frames": 37,
+  "mean_gaussian_render_s": 0.011625539595607316
+}

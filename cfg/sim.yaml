@@ -4,7 +4,13 @@ defaults:
 num_envs: 1
 freq: 50 # can only be divisible by 200
 camera_follow: False
-env_name: obstacle-sparse
+env_name: interiorgs
+# Empty means: derive a deterministic, occupancy-safe simulator route from
+# data/occupancy.png and data/occupancy .json at startup.
+path_file: null
+path_loop: False
+# Other environments remain available explicitly, for example:
+# env_name: obstacle-sparse
 # env_name: warehouse
 
 sensor:

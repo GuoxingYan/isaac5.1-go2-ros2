@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>仿真到 FAST-LIVO2 建图联动自验证</title>
+  <style>
+    :root { --ink:#17252b; --muted:#5a6a70; --paper:#f3f6f2; --panel:#fff; --line:#d4dfdc; --teal:#176b67; --blue:#205d80; --orange:#bd6535; --green:#24734e; --red:#a33d35; --gold:#9a701d; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:linear-gradient(135deg,#edf4f1,#fbfaf6 55%,#eef1f5); font:15px/1.65 "Noto Sans CJK SC","Microsoft YaHei",sans-serif; }
+    main { width:min(1480px,calc(100% - 32px)); margin:auto; padding:28px 0 70px; }
+    header { padding:30px 34px; background:#fff; border:1px solid var(--line); border-top:7px solid var(--teal); box-shadow:0 12px 30px #1f3b4515; }
+    h1,h2,h3 { line-height:1.25; letter-spacing:0; font-family:"Noto Serif CJK SC","Songti SC",serif; }
+    h1 { margin:0 0 12px; font-size:42px; color:#194f54; }
+    h2 { margin:40px 0 16px; padding-left:13px; border-left:5px solid var(--blue); font-size:28px; }
+    h3 { margin:20px 0 9px; color:#28535d; font-size:20px; }
+    p { margin:9px 0; }
+    .lede { max-width:1100px; font-size:17px; color:#3c5057; }
+    .meta { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; }
+    .pill { padding:6px 11px; border:1px solid var(--line); background:#f1f6f3; color:#38545a; font-size:13px; }
+    .pill b { color:var(--teal); }
+    .callout { margin:20px 0; padding:15px 18px; border-left:5px solid var(--gold); background:#fff8dd; }
+    .callout.ok { border-color:var(--green); background:#edf8f0; }
+    .callout.warn { border-color:var(--red); background:#fff0ed; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:15px; }
+    .card { padding:17px; background:var(--panel); border:1px solid var(--line); box-shadow:0 5px 18px #1f3b4508; }
+    .card h3 { margin-top:0; }
+    .status { display:inline-block; padding:3px 8px; font-size:12px; font-weight:700; }
+    .pass { color:#185d3d; background:#dcf2e4; } .partial { color:#76530d; background:#ffefbf; } .todo { color:#873932; background:#ffe0db; }
+    .diagram { overflow:auto; padding:12px; background:#fff; border:1px solid var(--line); }
+    svg { display:block; width:100%; min-width:920px; height:auto; }
+    table { width:100%; margin:12px 0 22px; border-collapse:collapse; background:#fff; border:1px solid var(--line); }
+    th,td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { background:#e7f0ef; color:#24545c; }
+    tr:last-child td { border-bottom:0; }
+    code { padding:1px 4px; background:#edf2f1; color:#95402f; font-family:"DejaVu Sans Mono",monospace; font-size:.92em; }
+    pre { overflow:auto; padding:15px; background:#1e3036; color:#e7f3ef; border:1px solid #31494d; line-height:1.45; }
+    .figures { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:16px; }
+    figure { margin:0; padding:11px; background:#fff; border:1px solid var(--line); }
+    figure img { display:block; width:100%; max-height:440px; object-fit:contain; background:#e8eeeb; }
+    figcaption { padding:8px 2px 1px; color:var(--muted); font-size:13px; }
+    .small { color:var(--muted); font-size:13px; }
+    footer { margin-top:42px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    @media (max-width:760px) { main { width:calc(100% - 18px); padding-top:10px; } header { padding:23px 19px; } h1 { font-size:32px; } h2 { font-size:23px; } th,td { padding:7px; font-size:13px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>仿真 → FAST-LIVO2 建图联动自验证</h1>
+    <p class="lede">本报告只覆盖当前阶段：使用 <code>data/</code> 下的 839873 Gaussian、碰撞 USD 和 occupancy 数据，让仿真产生可供 FAST-LIVO2 lidar-only 建图消费的 LiDAR + IMU 输入。定位、导航 processor、NeuPAN/track2、<code>/cmd_vel2</code> 闭环暂不纳入本次验收。</p>
+    <div class="meta"><span class="pill"><b>场景</b> data/ 原位坐标，无 recenter</span><span class="pill"><b>smoke</b> 60 steps / pass</span><span class="pill"><b>LiDAR</b> 10 Hz / 20,000 planned rays</span><span class="pill"><b>IMU</b> 200 Hz / 240 samples</span><span class="pill"><b>算法</b> FAST-LIVO2 尚未实际启动</span></div>
+  </header>
+
+  <div class="callout warn"><b>边界结论：</b>本次已证明仿真侧能在指定真实场景上运行巡航、从当前 collision USD 求交得到与真机相近数量级的点云、生成逐点纳秒时间戳并输出 200 Hz IMU；尚未把本次 ROS2 消息实际接入 FAST-LIVO2 并产出建图结果，因此不能宣称“建图算法已通过”。</div>
+
+  <h2>1. 一条建图输入链</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 1420 570" role="img" aria-label="仿真到建图的数据流和坐标系边界">
+      <defs>
+        <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto"><path d="M0,0 L0,8 L11,4 z" fill="#50666b"/></marker>
+        <filter id="shadow"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity=".12"/></filter>
+      </defs>
+      <rect x="22" y="25" width="405" height="485" rx="9" fill="#e6f3ef" stroke="#176b67" stroke-width="2" filter="url(#shadow)"/>
+      <text x="52" y="63" font-size="25" font-weight="700" fill="#176b67">A · 仿真世界与运动</text>
+      <text x="52" y="96" font-size="17" fill="#29484d">839873.usdz + 839873_collision.usd</text>
+      <text x="52" y="126" font-size="16" fill="#36585c">occupancy → 安全出生点/巡航点</text>
+      <rect x="52" y="151" width="345" height="76" rx="6" fill="#fff" stroke="#a8cfca"/>
+      <text x="73" y="180" font-size="17" font-weight="700">ScenePathCruise</text>
+      <text x="73" y="207" font-size="15">waypoint误差 → [vx, vy, omega]</text>
+      <line x1="224" y1="227" x2="224" y2="263" stroke="#50666b" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="52" y="263" width="345" height="74" rx="6" fill="#fff" stroke="#a8cfca"/>
+      <text x="73" y="291" font-size="17" font-weight="700">Go2 flat policy + 物理步进</text>
+      <text x="73" y="318" font-size="15">20 ms控制周期，5 ms物理子步</text>
+      <line x1="224" y1="337" x2="224" y2="373" stroke="#50666b" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="52" y="373" width="345" height="101" rx="6" fill="#fff" stroke="#a8cfca"/>
+      <text x="73" y="402" font-size="17" font-weight="700">传感器生成</text>
+      <text x="73" y="428" font-size="15">LiDAR: USD三角形求交 / 10 Hz</text>
+      <text x="73" y="452" font-size="15">IMU: 刚体物理采样 / 200 Hz</text>
+
+      <rect x="490" y="25" width="405" height="485" rx="9" fill="#edf1f8" stroke="#205d80" stroke-width="2" filter="url(#shadow)"/>
+      <text x="520" y="63" font-size="25" font-weight="700" fill="#205d80">B · 仿真 ROS2 桥</text>
+      <text x="520" y="96" font-size="16" fill="#36515e">Isaac进程 ↔ 文件桥 ↔ ROS2 Foxy/Humble</text>
+      <rect x="520" y="134" width="345" height="72" rx="6" fill="#fff" stroke="#b9c9df"/>
+      <text x="541" y="163" font-size="17" font-weight="700">/livox/lidar</text>
+      <text x="541" y="189" font-size="15">PointCloud2 · livox_frame · QoS 256</text>
+      <line x1="692" y1="207" x2="692" y2="243" stroke="#50666b" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="520" y="243" width="345" height="72" rx="6" fill="#fff" stroke="#b9c9df"/>
+      <text x="541" y="272" font-size="17" font-weight="700">/livox/imu</text>
+      <text x="541" y="298" font-size="15">sensor_msgs/Imu · livox_frame · 200 Hz</text>
+      <line x1="692" y1="316" x2="692" y2="352" stroke="#50666b" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="520" y="352" width="345" height="123" rx="6" fill="#fff" stroke="#b9c9df"/>
+      <text x="541" y="381" font-size="17" font-weight="700">时间与 TF 约定</text>
+      <text x="541" y="408" font-size="15">仿真时间 → Header.stamp</text>
+      <text x="541" y="432" font-size="15">body → livox_frame / lidar_livox</text>
+      <text x="541" y="456" font-size="15">不发布 map → body 真值冒充定位</text>
+
+      <rect x="958" y="25" width="440" height="485" rx="9" fill="#fff1e8" stroke="#bd6535" stroke-width="2" filter="url(#shadow)"/>
+      <text x="988" y="63" font-size="25" font-weight="700" fill="#a4512e">C · FAST-LIVO2 建图</text>
+      <text x="988" y="96" font-size="16" fill="#63453b">mid360.yaml: lidar-only</text>
+      <rect x="988" y="134" width="380" height="96" rx="6" fill="#fff" stroke="#e0bca6"/>
+      <text x="1009" y="163" font-size="17" font-weight="700">PointCloud2 解析</text>
+      <text x="1009" y="189" font-size="15">lidar_type=7 · scan_line=4</text>
+      <text x="1009" y="213" font-size="15">点字段 + 时间 → 去盲区/滤波</text>
+      <line x1="1178" y1="230" x2="1178" y2="266" stroke="#50666b" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="988" y="266" width="380" height="96" rx="6" fill="#fff" stroke="#e0bca6"/>
+      <text x="1009" y="295" font-size="17" font-weight="700">LiDAR-IMU 紧耦合</text>
+      <text x="1009" y="321" font-size="15">imu_int_frame=30</text>
+      <text x="1009" y="345" font-size="15">extrinsic_T=[-0.011,-0.02329,0.04412]</text>
+      <line x1="1178" y1="362" x2="1178" y2="398" stroke="#50666b" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="988" y="398" width="380" height="76" rx="6" fill="#fff" stroke="#e0bca6"/>
+      <text x="1009" y="427" font-size="17" font-weight="700">输出</text>
+      <text x="1009" y="453" font-size="15">/aft_mapped_to_init · /cloud_registered_local</text>
+      <line x1="427" y1="188" x2="490" y2="188" stroke="#50666b" stroke-width="3" marker-end="url(#arrow)"/>
+      <line x1="895" y1="188" x2="958" y2="188" stroke="#50666b" stroke-width="3" marker-end="url(#arrow)"/>
+      <text x="431" y="174" font-size="14" fill="#5a6a70">ROS2</text>
+      <text x="900" y="174" font-size="14" fill="#5a6a70">订阅</text>
+    </svg>
+  </div>
+  <p class="small">数据边界：仿真 odom/root state 仅用于运动和自验证；FAST-LIVO2 正式建图应只依赖它订阅到的 LiDAR + IMU。RGB-D 当前不进入这条 lidar-only 建图链。</p>
+
+  <h2>2. 巡航如何逐周期生成并应用 vx、vy、omega</h2>
+  <div class="grid">
+    <section class="card"><h3>2.1 路径来源</h3><p>当前没有依赖不存在的外部路径 JSON。启动时读取 <code>data/occupancy.png</code> 和带空格文件名的 <code>data/occupancy .json</code>，按 0.05 m 像素比例计算 free-space clearance，选最大安全连通区域的竖直走廊，生成 3 个 scene-frame waypoint。</p><p>本次路线起点约为 <code>(1.405, -9.965)</code>，中点约为 <code>(1.405, -5.765)</code>，终点约为 <code>(1.405, -1.615)</code>，安全 clearance 均满足 0.45 m 要求；路径只驱动仿真，不冒充 <code>/clicked_path</code> 或定位结果。</p></section>
+    <section class="card"><h3>2.2 一个控制周期</h3><p>每个 20 ms 控制周期先检查 ROS 速度命令；若有命令则它优先，否则巡航器读取 Go2 当前位姿并计算 waypoint 误差。巡航器将世界系误差转换到机器人 body 系：<code>forward = cos(yaw)*dx + sin(yaw)*dy</code>；<code>lateral = -sin(yaw)*dx + cos(yaw)*dy</code>；角度误差按 <code>atan2(sin,cos)</code> 归一化。</p></section>
+    <section class="card"><h3>2.3 三个控制量</h3><p><code>vx = clip(0.7*forward, -0.4, 0.4)*scale</code>；<code>vy = clip(0.8*lateral, -0.1, 0.1)*scale</code>；<code>omega = clip(1.2*yaw_error, -0.6, 0.6)</code>。</p><p>这里不是 <code>vz</code>：控制语义对应 <code>linear.x=vx</code>、<code>linear.y=vy</code>、<code>angular.z=omega</code>，<code>linear.z</code> 不参与平面行走。</p></section>
+  </div>
+  <pre>读取 /cmd_vel（如有则优先） → 否则巡航器更新 vx/vy/omega
+         → 写入 ctrl.base_vel_cmd_input[0]（仿真内部，不经 ROS 话题发布）
+         → 重新计算 observation → frozen flat policy(obs) → env.step(actions)
+         → 每控制周期 5 ms 物理子步 × 4 → Go2 位姿/速度变化
+         → IMU physics callback 200 Hz；LiDAR 10 Hz 对移动后的传感器位姿射线求交
+         → 文件桥传输 LiDAR/IMU 样本 → ROS2 发布 /livox/lidar 与 /livox/imu</pre>
+  <div class="callout"><b>控制与传感器数据不是同一条 ROS 流：</b>当前自动巡航直接驱动仿真内部策略，不会把自身 <code>vx/vy/omega</code> 发布到 <code>/cmd_vel</code>。它使机器人在 occupancy 航点间运动；LiDAR 和 IMU 随物理状态采样，再由 bridge 发布给 FAST-LIVO2。只有外部 ROS 速度命令才走 bridge 的反向控制通道。</div>
+
+  <h2>3. LiDAR 与 IMU 如何仿真</h2>
+  <table><thead><tr><th>阶段</th><th>仿真动作</th><th>输出语义</th><th>本次证据</th></tr></thead><tbody>
+    <tr><td>场景加载</td><td>直接加载 <code>data/839873_collision.usd</code>；RGB 使用 <code>data/839873.usdz</code>；不加 synthetic ground，不平移。</td><td>Gaussian 与 metric mesh 共享 data/ 原位坐标。</td><td><span class="status pass">通过</span> 60 meshes / source hash。</td></tr>
+    <tr><td>LiDAR几何</td><td>每 0.1 s 生成 20,000 条 MID360 覆盖近似射线，使用 Warp CUDA 对 collision USD 三角形求交。</td><td>有效点来自真实三角形，不用随机噪声点。</td><td><span class="status pass">通过</span> 最后一帧 19,937 returns。</td></tr>
+    <tr><td>点时间</td><td>按 5 us firing cadence 生成每个返回点的纳秒时间，起点与本帧 header stamp 相同；同一消息内两者使用仿真时钟。</td><td><code>timestamp</code> 是 PointCloud2 内逐点 FLOAT64 纳秒字段；仿真时钟不等于 Unix/rosbag epoch。</td><td><span class="status pass">仿真侧通过</span> 1,209,999,972.95 到 1,309,994,972.95 ns，跨度 99.995 ms。</td></tr>
+    <tr><td>IMU</td><td>Isaac Lab 刚体 IMU 物理 callback 每 5 ms 采样，发布 200 Hz。</td><td>角速度与比力来自物理传感器；ROS 姿态使用 bag 约定的 identity，不宣称融合真值。</td><td><span class="status pass">通过</span> 240 samples / 200.000 Hz。</td></tr>
+    <tr><td>噪声</td><td>不复刻真实噪声、反射率、Livox 专有扫描轨迹或 motion distortion。</td><td>目标是算法接口兼容和足够点密度，不是硬件噪声等效。</td><td><span class="status partial">明确限制</span></td></tr>
+  </tbody></table>
+
+  <h2>4. FAST-LIVO2 实际会怎样接收和利用</h2>
+  <div class="grid">
+    <section class="card"><h3>4.1 点云入口</h3><p>ROS2 文件桥把仿真保存的 xyz 与 aux 数组组装成 <code>sensor_msgs/msg/PointCloud2</code>，同时发布到 <code>/livox/lidar</code>。消息 header 为 <code>frame_id=livox_frame</code>，QoS 为 reliable、keep-last、depth 256、volatile，与真实 bag 元数据一致。</p><p>真实 bag 第一帧实测字段为 <code>x,y,z,intensity,tag,line,timestamp</code>，offset 分别为 <code>0,4,8,12,16,17,18</code>，<code>point_step=26</code>；仿真构造器严格采用同样布局。</p></section>
+    <section class="card"><h3>4.2 FAST-LIVO2 预处理</h3><p><code>mid360.yaml</code> 设置 <code>lidar_type=7</code>，说明走标准 PointCloud2 分支；<code>point_filter_num=3</code>、<code>filter_size_surf=0.5</code>、<code>scan_line=4</code>、<code>blind=0.1</code>。</p><p>真机建图日志实测约 19,968–20,064 点输入，预处理输出约 3,179–3,220 点；这不是简单每 3 点保留 1 点的结果。仿真 smoke 有 19,937 个返回点，密度处于相近数量级，但仿真帧尚未通过算法，不能把真机日志输出数当作仿真实测。</p><p>时间字段还存在待解释的口径差：bag 原始首帧逐点时间跨度约 100.266 ms，而 FAST-LIVO2 日志中同类 19,968 点帧的 <code>last_curv</code> 约 83.19 ms。当前只有已安装二进制与运行日志，没有对应预处理源码，不能确认两者如何换算；必须用仿真输入跑算法日志再判断。</p></section>
+    <section class="card"><h3>4.3 IMU 紧耦合</h3><p>FAST-LIVO2 订阅 <code>/livox/imu</code>，按 <code>imu_int_frame=30</code> 积分，使用 <code>acc_cov=0.5</code>、<code>gyr_cov=0.3</code>、bias covariance 0.0001、时间偏移 0。</p><p>LiDAR→IMU 外参由算法 YAML 负责：<code>T=[-0.011,-0.02329,0.04412]</code>、<code>R=I</code>。仿真不再把这个内部外参重复烘焙进点坐标。</p></section>
+  </div>
+  <div class="callout ok"><b>建图利用链：</b>FAST-LIVO2 用点云的空间几何和逐点时间做扫描预处理/局部地图匹配，用 IMU 的时间序列做姿态与运动先验；前端输出相对里程计和注册局部点云，之后 SC-PGO 才负责回环/全局优化。仿真 root state 不应作为 FAST-LIVO2 输入。</div>
+
+  <h2>5. 字段、QoS、frame 与外参对照</h2>
+  <table><thead><tr><th>项目</th><th>真实 bag / 建图基准</th><th>当前仿真</th><th>判断</th></tr></thead><tbody>
+    <tr><td>LiDAR topic/type</td><td><code>/livox/lidar</code> / PointCloud2；约 10 Hz；<code>lidar_type=7</code></td><td>同 topic/type；由 collision USD 求交；10 Hz tick</td><td><span class="status pass">接口一致</span></td></tr>
+    <tr><td>PointCloud2 fields</td><td>xyz + intensity/tag/line/timestamp，26 bytes</td><td>同字段、offset、datatype、point_step；intensity/tag 为明确的零值模型</td><td><span class="status pass">结构一致</span></td></tr>
+    <tr><td>逐点 timestamp</td><td>FLOAT64 纳秒绝对时间；实测首点等于 header stamp，原始跨度约 100.266 ms；算法日志 last_curv≈83.19 ms</td><td>FLOAT64 纳秒；首点从仿真 header stamp 起算，扫描跨度 99.995 ms；FAST-LIVO2 解析结果未测</td><td><span class="status partial">字段布局匹配；clock epoch 与算法相对时间映射待验证</span></td></tr>
+    <tr><td>LiDAR QoS</td><td>reliable / depth 256 / volatile</td><td>reliable / depth 256 / volatile</td><td><span class="status pass">一致</span></td></tr>
+    <tr><td>IMU topic/type</td><td><code>/livox/imu</code> / sensor_msgs/Imu；约 200 Hz</td><td>同 topic/type；200 Hz；frame=livox_frame</td><td><span class="status pass">接口一致</span></td></tr>
+    <tr><td>消息 frame</td><td>bag 的 LiDAR 与 IMU 都是 <code>livox_frame</code></td><td>raw 两者都是 <code>livox_frame</code>；另发 body→<code>lidar_livox</code> alias TF</td><td><span class="status pass">raw对齐</span></td></tr>
+    <tr><td>body→LiDAR TF</td><td>导航脚本固定为 <code>[0.187,0,0.0803]</code> + Y 轴 13°，child=<code>lidar_livox</code></td><td>同一参数；<code>livox_frame</code> 也提供同参数 alias，raw 数据不改名</td><td><span class="status pass">适配层统一</span></td></tr>
+    <tr><td>LiDAR→IMU外参</td><td>FAST-LIVO2 YAML：<code>[-0.011,-0.02329,0.04412]</code>、R=I</td><td>保留给 FAST-LIVO2；IMU body 安装位置由 body→LiDAR 与该向量组合得到</td><td><span class="status pass">不重复变换</span></td></tr>
+    <tr><td>map→body</td><td>定位脚本从 <code>/slam/lidar_pose</code> 发布，语义风险尚未在算法代码内消除</td><td>本阶段不发布 map→body 定位真值；只发仿真 odom→body 对照</td><td><span class="status partial">暂不进入建图</span></td></tr>
+  </tbody></table>
+
+  <h2>6. 可视化证据</h2>
+  <div class="figures">
+    <figure><img src="../data/occupancy.png" alt="839873 occupancy map"><figcaption>输入 occupancy 图：白色区域是 free-space，黑色区域为障碍/边界；巡航器使用它做安全出生点和路线检查。</figcaption></figure>
+    <figure><img src="mapping-link-smoke-final/scene_rgb.png" alt="Gaussian rendered scene"><figcaption>本次 smoke 的 Gaussian RGB：来自 <code>data/839873.usdz</code>，无 recenter、无平移。</figcaption></figure>
+    <figure>
+      <svg viewBox="0 0 266 502" role="img" aria-label="occupancy map with generated cruise path" style="width:auto;height:440px;margin:auto;background:#e8eeeb">
+        <image href="../data/occupancy.png" x="0" y="0" width="266" height="502" image-rendering="pixelated"/>
+        <polyline points="205,59 205,227 205,393" fill="none" stroke="#e14e28" stroke-width="3"/>
+        <circle cx="205" cy="59" r="5" fill="#176b67" stroke="white" stroke-width="1.5"/>
+        <circle cx="205" cy="227" r="5" fill="#205d80" stroke="white" stroke-width="1.5"/>
+        <circle cx="205" cy="393" r="5" fill="#bd6535" stroke="white" stroke-width="1.5"/>
+        <text x="144" y="47" font-size="7" fill="#123c3b">START</text>
+        <text x="144" y="215" font-size="7" fill="#123c3b">MID</text>
+        <text x="144" y="381" font-size="7" fill="#123c3b">END</text>
+      </svg>
+      <figcaption>基于 occupancy free-space clearance 生成的 3 点纵向巡航路线（红线）；这是仿真 motion source，不是导航模块的 <code>/clicked_path</code>。</figcaption>
+    </figure>
+  </div>
+  <div class="grid">
+    <section class="card"><h3>运行证据</h3><p><code>reports/mapping-link-smoke-final/smoke.json</code>：<b>pass=true</b>，60 steps，RGBD、LiDAR、IMU 200 Hz 检查均通过。</p><p><code>scene_evidence.json</code>：60 mesh，60 个 CollisionAPI/ MeshCollisionAPI，Gaussian 1,445,429 个，support hit=true，source transform=identity。</p></section>
+    <section class="card"><h3>当前帧字段样本</h3><p>最后共享数据：19,937 个 xyz 点；aux 中有 intensity、timestamp、tag、line、distance、azimuth、elevation。PointCloud2 的 timestamp 为 FLOAT64 纳秒，line 为 0..3。bag 首点与 header stamp 对齐；仿真使用自己的仿真时钟 epoch。</p><p>本次未启动 ROS2 文件桥和 FAST-LIVO2 进程，因此 DDS 实际接收、仿真 timestamp 被算法解析、仿真预处理点数及建图结果都未验证。</p></section>
+  </div>
+
+  <h2>7. 验收矩阵与下一步</h2>
+  <table><thead><tr><th>检查项</th><th>状态</th><th>说明</th></tr></thead><tbody>
+    <tr><td>使用 data/ 原位 Gaussian/mesh/occupancy</td><td><span class="status pass">通过</span></td><td>代码不读取 source_frame_backup，不使用 recenter 或 scene_frame 平移。</td></tr>
+    <tr><td>occupancy 安全巡航与 Go2 物理运动</td><td><span class="status pass">通过</span></td><td>自动生成 scene-frame waypoint；flat policy 进入 60 步主循环。</td></tr>
+    <tr><td>PointCloud2 结构、QoS、frame alias</td><td><span class="status pass">仿真侧完成</span></td><td>字段布局、QoS、raw frame 与 bag 对齐；ROS/DDS 端到端尚未运行。</td></tr>
+    <tr><td>点密度与逐点时间</td><td><span class="status partial">接口侧通过</span></td><td>20,000 planned rays/frame；最后一帧 19,937 returns；仿真跨度 99.995 ms。真机原始跨度 100.266 ms，但 FAST-LIVO2 日志 last_curv≈83.19 ms，算法相对时间映射待确认。</td></tr>
+    <tr><td>ROS2 bridge → FAST-LIVO2 实际接收</td><td><span class="status todo">未验证</span></td><td>尚未在 Foxy chroot 启动建图节点并检查其输出。</td></tr>
+    <tr><td>FAST-LIVO2 → SC-PGO 地图结果</td><td><span class="status todo">未验证</span></td><td>尚未生成当前仿真输入对应的 GlobalMap/轨迹。</td></tr>
+    <tr><td>定位、导航、clicked_path、cmd_vel2</td><td><span class="status todo">本阶段不做</span></td><td>待建图输入链稳定后再处理，跟随模式也不在短期目标。</td></tr>
+  </tbody></table>
+  <div class="callout"><b>建议的下一次实测：</b>先启动仿真和 ROS2 文件桥，确认 <code>ros2 topic echo /livox/imu</code>、<code>ros2 topic hz /livox/lidar</code>、PointCloud2 fields/point_step/frame/QoS；再启动只读的 FAST-LIVO2 mapping，保存其日志、<code>/aft_mapped_to_init</code>、<code>/cloud_registered_local</code> 和 map 文件。只有这一步完成，才能把本报告的“仿真侧输入兼容”升级为“建图联动通过”。</div>
+
+  <footer>
+    <p><b>代码范围：</b><code>env/interiorgs_scene.py</code>、<code>env/mesh_lidar.py</code>、<code>go2/path_cruise.py</code>、<code>isaac_go2_ros2.py</code>、<code>ros2/go2_ros2_bridge.py</code>、<code>ros2/go2_file_bridge_wsl2.py</code>、<code>ros2/livox_pointcloud.py</code>、<code>cfg/our_go2_sensors.json</code>。</p>
+    <p><b>只读基准：</b><code>/home/foxy_box/root/GO2_fastlivo2/install/fast_livo/share/fast_livo/config/mid360.yaml</code>、<code>/home/foxy_box/root/sim_platform_start_verify.sh</code>、真实 bag <code>/data/Download/full_20261021_193634</code>。</p>
+    <p>本报告不修改建图、定位、导航模块；不把 RGB-D 当作当前建图输入；不把仿真 ground truth 当作定位输出。</p>
+  </footer>
+</main>
+</body>
+</html>

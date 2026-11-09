@@ -11,7 +11,7 @@ def _numpy(value):
 
 class D435Rig:
     """分别保留彩色与深度相机，不将不同分辨率/视场伪装为已对齐图像。"""
-    def __init__(self, base):
+    def __init__(self, base, native_annotators=True):
         from isaacsim.sensors.camera import Camera
         import isaacsim.core.utils.numpy.rotations as rotations
         cfg = PROFILE['camera']
@@ -19,21 +19,31 @@ class D435Rig:
             orientation=rotations.euler_angles_to_quats(np.array(cfg['rpy_deg']),degrees=True), resolution=tuple(cfg['rgb_resolution']))
         self.depth_camera = Camera(prim_path=base+'/d435_depth', translation=np.array(cfg['position']),
             orientation=rotations.euler_angles_to_quats(np.array(cfg['rpy_deg']),degrees=True), resolution=tuple(cfg['depth_resolution']))
+        self.native_annotators = bool(native_annotators)
         for camera, fov in [(self.rgb_camera,cfg['rgb_hfov_deg']), (self.depth_camera,cfg['depth_hfov_deg'])]:
-            camera.initialize()
+            if self.native_annotators:
+                camera.initialize(attach_rgb_annotator=True)
             camera.set_focal_length(.018)
             camera.set_horizontal_aperture(2*.018*math.tan(math.radians(fov)/2))
             camera.set_clipping_range(.05,100.)
-        self.depth_camera.add_distance_to_image_plane_to_frame()
-        self.depth_camera.add_semantic_segmentation_to_frame()
-        self.depth_camera.add_pointcloud_to_frame(include_unlabelled=True)
+        if self.native_annotators:
+            self.depth_camera.add_distance_to_image_plane_to_frame()
+            self.depth_camera.add_semantic_segmentation_to_frame()
+            self.depth_camera.add_pointcloud_to_frame(include_unlabelled=True)
         self.last_capture_time = -1.
 
     def get_rgb(self):
+        if hasattr(self, 'gaussian_renderer'):
+            pos, quat = self.rgb_camera.get_world_pose(camera_axes='ros')
+            image = self.gaussian_renderer.render(_numpy(pos), _numpy(quat), self.get_intrinsics_matrix(), PROFILE['camera']['rgb_resolution'])
+            if hasattr(self, 'rgb_display'):
+                rgba = np.dstack([image, np.full(image.shape[:2], 255, dtype=np.uint8)])
+                self.rgb_display.set_bytes_data(rgba.ravel().tolist(), [image.shape[1], image.shape[0]])
+            return image
         return self.rgb_camera.get_rgb()
 
     def get_depth(self):
-        depth = self.depth_camera.get_depth()
+        depth = self.depth_provider.get_depth() if hasattr(self, 'depth_provider') else self.depth_camera.get_depth()
         if depth is None:
             return None
         depth = np.asarray(depth,dtype=np.float32).copy()
@@ -42,13 +52,25 @@ class D435Rig:
         return depth
 
     def get_intrinsics_matrix(self):
+        if not self.native_annotators:
+            return self._explicit_intrinsics(PROFILE['camera']['rgb_resolution'], PROFILE['camera']['rgb_hfov_deg'])
         return _numpy(self.rgb_camera.get_intrinsics_matrix())
 
     def get_depth_intrinsics_matrix(self):
+        if not self.native_annotators:
+            return self._explicit_intrinsics(PROFILE['camera']['depth_resolution'], PROFILE['camera']['depth_hfov_deg'])
         return _numpy(self.depth_camera.get_intrinsics_matrix())
 
+    @staticmethod
+    def _explicit_intrinsics(resolution, hfov_deg):
+        width, height = map(float, resolution)
+        focal = width / (2.0 * math.tan(math.radians(float(hfov_deg)) / 2.0))
+        return np.asarray([[focal, 0., (width - 1.) / 2.],
+                           [0., focal, (height - 1.) / 2.],
+                           [0., 0., 1.]], dtype=np.float32)
+
     def get_current_frame(self):
-        return self.depth_camera.get_current_frame()
+        return {} if hasattr(self, 'depth_provider') else self.depth_camera.get_current_frame()
 
     def get_pointcloud(self, world_frame=True):
         """由已截断的米制深度反投影，避免将 10 米外几何混入 D435 点云。"""
@@ -114,7 +136,51 @@ class SensorManager:
             prim.GetAttribute('omni:sensor:Core:emitterState:s001:elevationDeg').Set(Vt.FloatArray.FromNumpy(el))
 
     def add_camera(self,freq):
-        return [D435Rig(f'/World/envs/env_{i}/Go2/base') for i in range(self.num_envs)]
+        self.cameras=[D435Rig(f'/World/envs/env_{i}/Go2/base') for i in range(self.num_envs)]
+        return self.cameras
+
+    def add_camera_for_scene(self, native_annotators=True):
+        self.cameras=[D435Rig(f'/World/envs/env_{i}/Go2/base', native_annotators=native_annotators)
+                      for i in range(self.num_envs)]
+        return self.cameras
+
+    def bind_pose_updates(self, env):
+        """Keep sensor prims attached to the simulated articulation pose."""
+        self.env = env
+        self._closed = False
+        self.original_render = env.unwrapped.sim.render
+
+        def render_with_sensor_pose(*args, **kwargs):
+            self.sync_poses()
+            return self.original_render(*args, **kwargs)
+
+        env.unwrapped.sim.render = render_with_sensor_pose
+        self.sync_poses()
+
+    def sync_poses(self):
+        from scipy.spatial.transform import Rotation
+        if getattr(self, '_closed', False):
+            return False
+        try:
+            robot = self.env.unwrapped.scene['unitree_go2']
+            transforms = robot.root_physx_view.get_root_transforms().detach().cpu().numpy()
+        except (AttributeError, KeyError, ReferenceError, RuntimeError):
+            return False
+        for i, state in enumerate(transforms):
+            body_rotation = Rotation.from_quat(state[3:7])
+            if hasattr(self, 'cameras'):
+                camera_rotation = body_rotation * Rotation.from_euler('xyz', PROFILE['camera']['rpy_deg'], degrees=True)
+                quat = camera_rotation.as_quat()[[3, 0, 1, 2]]
+                pos = state[:3] + body_rotation.apply(PROFILE['camera']['position'])
+                for camera in (self.cameras[i].rgb_camera, self.cameras[i].depth_camera):
+                    camera.set_world_pose(position=pos.astype(np.float32), orientation=quat.astype(np.float32), camera_axes='world')
+            if i < len(self.lidar_prims):
+                lidar_rotation = body_rotation * Rotation.from_euler('xyz', PROFILE['lidar']['rpy_deg'], degrees=True)
+                quat = lidar_rotation.as_quat()[[3, 0, 1, 2]]
+                pos = state[:3] + body_rotation.apply(PROFILE['lidar']['position'])
+                self.lidar_prims[i].GetAttribute('xformOp:translate').Set(Gf.Vec3d(*pos.tolist()))
+                self.lidar_prims[i].GetAttribute('xformOp:orient').Set(Gf.Quatd(float(quat[0]), Gf.Vec3d(*quat[1:].tolist())))
+        return True
 
     def add_imu(self,env):
         self.imu=env.unwrapped.scene['mid360_imu']
@@ -134,5 +200,18 @@ class SensorManager:
                 continue
             self.imu_last_time[i]=stamp
             self.imu_samples.append({'robot':i,'time':stamp,'linear_acceleration':acceleration[i].tolist(),
-                'angular_velocity':angular[i].tolist(),'frame_id':'unitree_go2/mid360_imu'})
+                'angular_velocity':angular[i].tolist(),'frame_id':PROFILE['ros']['imu_frame_id']})
         self.imu_samples=self.imu_samples[-20000:]
+
+    def close(self):
+        self._closed = True
+        if hasattr(self, 'original_render'):
+            try:
+                self.env.unwrapped.sim.render = self.original_render
+            except (AttributeError, ReferenceError, RuntimeError):
+                pass
+        if hasattr(self, 'sim'):
+            try:
+                self.sim.remove_physics_callback('mid360_imu_200hz')
+            except (AttributeError, ReferenceError, RuntimeError):
+                pass
