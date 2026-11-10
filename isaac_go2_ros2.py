@@ -27,10 +27,15 @@ parser.add_argument("--max-steps", type=int, default=0)
 parser.add_argument("--report-dir", default="reports/our-go2")
 parser.add_argument("--policy", choices=["rough", "flat"], default="rough")
 parser.add_argument("--spawn-seed", type=int, default=None)
-parser.add_argument("--spawn-clearance", type=float, default=0.45)
+parser.add_argument("--spawn-clearance", type=float, default=0.2)
 parser.add_argument("--data-dir", default="data")
 parser.add_argument("--path-file", default=None)
 parser.add_argument("--no-cruise", action="store_true")
+parser.add_argument("--cruise-start-file", default=None, help="Wait until this file exists before starting cruise")
+parser.add_argument("--cruise-trace", default=None, help="Write robot truth and waypoint progress as JSONL")
+parser.add_argument("--cruise-finished-file", default=None, help="Create this file when a non-loop cruise finishes")
+parser.add_argument("--exit-on-cruise-finished", action="store_true", help="Exit after a non-loop cruise finishes")
+parser.add_argument("--exit-on-cruise-aborted", action="store_true", help="Exit after cruise safety/stall abort")
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -124,7 +129,8 @@ def run_simulator(cfg):
         sim_env.create_full_warehouse_env() # full warehouse
 
     # Sensor setup
-    sm = go2_sensors.SensorManager(cfg.num_envs, cfg.sensor.enable_lidar or cfg.sensor.enable_camera) if (cfg.sensor.enable_lidar or cfg.sensor.enable_camera or cfg.sensor.enable_imu) else None
+    sensor_rendering = cfg.sensor.enable_camera or (cfg.sensor.enable_lidar and cfg.env_name != "interiorgs")
+    sm = go2_sensors.SensorManager(cfg.num_envs, sensor_rendering) if (cfg.sensor.enable_lidar or cfg.sensor.enable_camera or cfg.sensor.enable_imu) else None
     lidar_annotators = []
     if cfg.sensor.enable_lidar and not interior_scene:
         lidar_annotators = sm.add_rtx_lidar()
@@ -134,7 +140,7 @@ def run_simulator(cfg):
     if interior_scene and cfg.sensor.enable_lidar:
         from env.mesh_lidar import CollisionMeshLidar
         lidar_annotators = [CollisionMeshLidar(env)]
-    if interior_scene and sm:
+    if interior_scene and sm and (cameras or sm.lidar_prims):
         sm.bind_pose_updates(env)
 
     # Keyboard control
@@ -170,7 +176,9 @@ def run_simulator(cfg):
     cruise = None
     if interior_scene and scene_path is not None and not args_cli.no_cruise:
         from go2.path_cruise import ScenePathCruise
-        cruise = ScenePathCruise(scene_path, loop=bool(scene_path.get("loop", getattr(cfg, "path_loop", False))))
+        cruise = ScenePathCruise(scene_path, loop=bool(scene_path.get("loop", getattr(cfg, "path_loop", False))),
+                                 clearance_check=interior_scene.center_clearance,
+                                 required_clearance=args_cli.spawn_clearance)
         print(f"[INFO] Scene path cruise: {cruise.path_file} ({len(cruise.waypoints)} waypoints)", flush=True)
     validator = None
     if args_cli.self_test or args_cli.cmd_test:
@@ -190,7 +198,11 @@ def run_simulator(cfg):
             if ROS2_AVAILABLE and dm is not None:
                 dm.check_cmd_vel()
             if cruise is not None:
-                cruise.update(env, go2_ctrl)
+                if args_cli.cruise_start_file and not Path(args_cli.cruise_start_file).is_file():
+                    if not go2_ctrl.ros_commands:
+                        go2_ctrl.base_vel_cmd_input[0].zero_()
+                else:
+                    cruise.update(env, go2_ctrl)
             # env.step() returns a cached next-step observation. Recompute
             # without advancing observation history so this cycle's newly
             # selected command reaches the policy immediately.
@@ -208,6 +220,25 @@ def run_simulator(cfg):
             if validator:
                 validator.after_step(step + 1000 if args_cli.cmd_test else step)
             step += 1
+            if args_cli.cruise_trace and cruise is not None and (step % 5 == 0 or cruise.finished or cruise.aborted):
+                state = env.unwrapped.scene["unitree_go2"].data.root_state_w[0].detach().cpu().numpy()
+                trace_path = Path(args_cli.cruise_trace)
+                trace_path.parent.mkdir(parents=True, exist_ok=True)
+                with trace_path.open("a", encoding="utf-8") as trace:
+                    trace.write(json.dumps({"wall_time": time.time(), "simulation_time": float(env.unwrapped.sim.current_time),
+                                            "position": state[:3].tolist(), "quaternion_wxyz": state[3:7].tolist(),
+                                            "velocity_world": state[7:10].tolist(), "waypoint_index": cruise.index,
+                                            "waypoint_count": len(cruise.waypoints), "complete": cruise.finished,
+                                            "command": cruise.command.tolist(), "aborted": cruise.aborted,
+                                            "abort_reason": cruise.abort_reason, "diagnostics": cruise.diagnostics}) + "\n")
+            if cruise is not None and cruise.finished and args_cli.cruise_finished_file:
+                finished_path = Path(args_cli.cruise_finished_file)
+                finished_path.parent.mkdir(parents=True, exist_ok=True)
+                finished_path.touch(exist_ok=True)
+            if cruise is not None and cruise.finished and args_cli.exit_on_cruise_finished:
+                break
+            if cruise is not None and cruise.aborted and args_cli.exit_on_cruise_aborted:
+                break
             if (validator and validator.finished) or (args_cli.max_steps and step >= args_cli.max_steps):
                 break
 

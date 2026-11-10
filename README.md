@@ -224,16 +224,39 @@ GO2_REPORT_DIR=reports/our-go2 ./ros2/run_probe.sh
 
 完整的带流程图、参数对照表、差异分级和图片证据的离线报告位于 [`reports/module_interface_report.html`](reports/module_interface_report.html)。
 
-当前阶段的“仿真如何联动 FAST-LIVO2 建图”专项报告位于 [`reports/mapping_simulation_report.html`](reports/mapping_simulation_report.html)。它只验收仿真到 `/livox/lidar`、`/livox/imu` 的输入链，不把尚未启动的 FAST-LIVO2 写成已通过。
+当前阶段的“仿真如何联动 FAST-LIVO2 建图”专项报告位于 [`reports/mapping_simulation_report.html`](reports/mapping_simulation_report.html)。本轮已实际启动仿真、ROS2 文件桥和只读 FAST-LIVO2/SC-PGO mapping，并保存输入/输出话题、算法日志、GlobalMap 与 SVG 可视化，结果见 [`reports/mapping-link-run-20261109-173837/`](reports/mapping-link-run-20261109-173837/)。本轮只验证 mapping 输入与局部输出，不启动 localizer 或 navigation processor。
 
 ### 当前建图专项实现状态
 
 - 场景只使用 `data/839873.usdz`、`data/839873_collision.usd`、`data/occupancy.png` 和 `data/occupancy .json`；代码不读取 `source_frame_backup`，不做 recenter 或平移。
-- 无外部路径文件时，仿真从 occupancy free-space 自动生成安全 scene-frame 巡航走廊。巡航器逐控制周期计算 `vx`、`vy`、`omega`，实际控制字段是 `linear.x=vx`、`linear.y=vy`、`angular.z=omega`，不是 `linear.z=vz`。
-- LiDAR 直接对当前 collision USD 的三角形做求交；20,000 条计划射线/帧不是返回点承诺，当前 smoke 实测最后一帧 19,937 个有效返回点。该数量与真机建图输入约 19,968–20,064 点处于相近数量级，但尚未用仿真数据实测算法预处理输出。
-- `/livox/lidar` 构造与真实 bag 相同的 `x/y/z/intensity/tag/line/timestamp` 字段布局（`point_step=26`）。真实 bag 首帧解析确认 `timestamp` 为 FLOAT64 纳秒绝对时间，首点与 header stamp 对齐、帧内跨度约 100.266 ms；仿真逐点时间也是 FLOAT64 纳秒，首点从本帧仿真 header stamp 起算、扫描跨度约 99.995 ms。仿真时钟 epoch 与 rosbag epoch 不同，跨话题时钟及 FAST-LIVO2 实际消费待端到端验证。`/livox/imu` 为 200 Hz，原始 frame 都是 `livox_frame`，QoS 为 reliable/depth 256/volatile。
+- 当前从 occupancy 安全区域生成 scene-frame 矩形巡航 waypoint；它不是全图覆盖路线，完整执行状态以实际运行记录为准。巡航器逐控制周期计算 `vx`、`vy`、`omega`，实际控制字段是 `linear.x=vx`、`linear.y=vy`、`angular.z=omega`，没有 `linear.z=vz`。
+- 当前 `ScenePathCruise` 长边目标限幅为 `|vx|<=0.32 m/s`、`|vy|<=0.10 m/s`、`|omega|<=0.60 rad/s`；大航向误差时置零线速度并原地转向。它们是策略输入目标，不是机体实测地速。2026-11-10 实测在第一条长边出现姿态失稳，约 19.03 s 因 `body_up_z=0.647` 触发保护并停止；全路线巡航和全场景 mapping 均未验收。运行日志、地图、点云、bag、轨迹、视频和图片均为本地中间/结果数据，不纳入 Git 推送。
+
+巡航控制闭环如下：
+
+```text
+scene-frame waypoints + Go2 当前真值 pose/yaw
+                 ↓
+        当前线段误差与期望航向
+                 ↓
+    机体速度目标 [vx, vy, omega]
+                 ↓
+48维 policy observation 中的 base_vel_cmd
+                 ↓
+       冻结 Flat actor 输出 12 维
+           关节位置目标动作
+                 ↓
+            PhysX 更新状态
+                 └──────────→ 下一控制周期
+```
+
+`ScenePathCruise` 在当前段上计算 waypoint 距离、路径偏差和期望航向；当航向误差大于 `0.65 rad` 时，先令 `vx=vy=0`，按比例生成限幅到 `±0.6 rad/s` 的 `omega`。否则由机体前向/侧向误差生成限幅速度目标。策略观测还包含机体线/角速度、投影重力、关节相对位置/速度和上一动作；InteriorGS 使用 Flat policy，不把 RGB-D、LiDAR 或 waypoint 直接送入 actor。actor 的 12 维关节目标经 Isaac Lab/PhysX 执行后，新的真值位姿反馈给下一周期。
+
+本次异常发生在第一条长边而不是矩形角点；中止前 `vx≈0.32 m/s`、`vy≈0.10 m/s`，路径误差升至约 `0.26 m`，随后 roll 快速增大并触发倾倒保护。初始 yaw 与接入段方向基本一致且初始姿态接近直立，因此现有证据不支持把初始朝向或角点单独定为根因，但一次运行也不能排除它们。当前没有逐周期保存完整 policy observation/action，无法断定是侧向速度目标、策略响应、接触/碰撞还是其他动力学因素导致失稳。建议后续先补齐观测/动作/接触记录并做单变量短段对比；若确认命令切换过急，再评估斜率限制和角点减速，保留倾倒保护。
+- LiDAR 直接对当前 collision USD 的三角形做求交；20,000 条计划射线/帧不是返回点承诺，传感器文件样本约 19,997–20,000 个有效点。真实 mapping bag 输入约 19,968–20,064 点；本轮 FAST-LIVO2 日志实测接收 19,998–20,000 点/帧，预处理输出 6,666 点，`last_curv` 约 83.31–83.32 ms。
+- `/livox/lidar` 构造与真实 bag 相同的 `x/y/z/intensity/tag/line/timestamp` 字段布局（`point_step=26`）。本轮 DDS 实测 fields、header frame、width、point_step 与预期一致；FAST-LIVO2 日志实测逐点时间被转换为 `0–83.32 ms` 的扫描相对时间。算法读到 IMU 并完成初始化/重力对齐，但 580 帧日志均显示 `After UndistortPcl, IMUpose size=0`，因此本轮没有确认 IMU 轨迹实际用于扫描去畸变。现有证据不能单独确定根因；要检查扫描相对时间与 header/IMU 时间窗口是否重叠、仿真时钟是否一致、IMU 是否覆盖整帧、IMU 采样间隔/队列状态和该版本去畸变实现的条件。`mid360.yaml` 的 `imu_time_offset=0`、LiDAR→IMU 外参为 `[-0.011,-0.02329,0.04412]`/R=I 是配置事实，不足以证明时间同步或去畸变输入队列有效。
 - TF 明确提供 `body -> livox_frame` 和 `body -> lidar_livox` 两个传感器别名，body-to-LiDAR 使用导航脚本的 `[0.187, 0, 0.0803]` 和 Y 轴 13°；FAST-LIVO2 的 LiDAR-to-IMU 外参仍由其 `mid360.yaml` 消费，不在点云中重复变换。
-- 本阶段不把 RGB-D、仿真 odom/root state、定位 `map -> body` 或导航 `/cmd_vel2` 当作 FAST-LIVO2 建图输入。当前 smoke 已验证仿真侧，尚未启动 FAST-LIVO2 处理这些仿真消息。
+- 本阶段不把 RGB-D、仿真 odom/root state、定位 `map -> body` 或导航 `/cmd_vel2` 当作 FAST-LIVO2 建图输入。FAST-LIVO2/SC-PGO 已在独立目录运行并成功保存 8,461 点 `GlobalMap.pcd`、42 个关键帧 scans；`topics_motion` rosbag 的 SQLite 文件可复查到 `/aft_mapped_to_init`、`/cloud_registered_local` 各 71 条。另有 `topics_final_metadata.yaml` 记载各 79 条，但对应 `topics_final_0.db3` 不在本次证据目录，故不作为已验证录包计数。mapping 从机器人已到路线中段后才启动，后续局部运动约 1.2 m；相对位姿增量约 `(1.204, -0.143) m`。这是局部联动证据，不是从路线起点覆盖全场景的地图验收。
 
 ### 1. 总体架构与数据流
 
@@ -387,7 +410,7 @@ FAST-LIVO2 以 LiDAR-IMU 紧耦合里程计为前端，当前 `mid360.yaml` 配�
 | LiDAR频率 | 建图 bag约10.002 Hz；4296帧/429.572 s | Mid-360运行记录约10.005 Hz | 10 Hz |
 | IMU topic | `/livox/imu`，`sensor_msgs/msg/Imu`，约199.864 Hz | Mid-360同名同类型，约199.885 Hz；硬件 bag原名`/imu_data_ros_nei`并 remap | `/livox/imu`，200 Hz |
 | 真实 frame | LiDAR和IMU bag样本均为 `livox_frame` | raw LiDAR/IMU 均为 `livox_frame`；桥提供 `body -> livox_frame` 与 `body -> lidar_livox` 静态 TF alias；导航处理器仍可输出 `body` 对齐点云/scan | raw frame 已按建图基准对齐，aligned 输出的 `body` 语义由导航处理器负责 |
-| QoS | bag元数据中 LiDAR depth=256、IMU depth=256，可靠、volatile | `/livox/lidar` 与 `/livox/imu` 使用 keep-last/depth 256/reliable/volatile | 仿真 publisher 配置已按 bag 对齐；仍需 DDS 端到端实测确认无丢帧 |
+| QoS | bag 元数据记录 LiDAR/IMU depth=256、可靠、volatile | publisher 代码配置 keep-last/depth 256/reliable/volatile；本轮 DDS introspection 实测 reliable/volatile，History Depth 为 UNKNOWN | reliability/durability 已在运行端点确认；depth 256 仅有 bag 元数据与代码配置证据，未由本轮 DDS introspection 确认，且未测量丢包计数 |
 
 #### 5.2 相机参数
 
@@ -413,27 +436,28 @@ FAST-LIVO2 以 LiDAR-IMU 紧耦合里程计为前端，当前 `mid360.yaml` 配�
 | `/slam/lidar_pose` 为 map 下 LiDAR位姿；仿真 `/unitree_go2/odom` 为 odom 下 base真值 | 直接 remap 会把不同坐标系当成同一坐标系 | 仿真真值仅作 oracle 对照；正式导航必须等待 localizer输出 |
 | 导航最终命令 `/cmd_vel2`；仿真控制入口 `/unitree_go2/cmd_vel` | 规划器输出不会自动驱动仿真 | 桥已保留同字段 `/cmd_vel2` 订阅和限幅，但不属于当前建图验收；定位/导航闭环仍未验证 |
 | track2 注释说换算 LiDAR pose 到机器人 pose，但实现将 dx/dy/yaw offset 均设为0；Pose-to-TF 节点又直接把 pose 当成 `map -> body` | 当 pose 实际代表 LiDAR frame 时，planner 位姿和 body TF 语义可能不一致 | 必须用真实位姿定义/标定验证，在只允许修改仿真的前提下由仿真接口层给出明确 frame 语义与一次性转换 |
-| 旧仿真发布 depth=1 的 LiDAR publisher；真实 bag记录 depth=256 | 高负载或慢消费者时可能丢帧 | 当前 `/livox/lidar` 与 `/livox/imu` publisher 已配置 depth=256；端到端仍需检查实际 DDS 运输 |
+| 旧仿真发布 depth=1 的 LiDAR publisher；真实 bag记录 depth=256 | 高负载或慢消费者时可能丢帧 | 当前两路 publisher 配置 depth=256，且本轮 mapping 已收到消息并产出结果；DDS History Depth 显示 UNKNOWN，实际队列深度与丢包数仍未从运行端点量化 |
 
 ### 7. 仿真符合性结论
 
 | 检查项 | 当前结果 | 说明 |
 | --- | --- | --- |
-| `/livox/lidar` topic和消息大类 | **仿真侧完成** | 标准 PointCloud2，与实测 Mid-360 bag 和 `lidar_type=7` 一致；字段、point_step、raw frame 已对齐 |
-| `/livox/lidar` 10 Hz | **已验收** | 仿真证据约10.009 Hz；只代表传感器调度，不代表 FAST-LIVO2已成功处理 |
-| `/livox/imu` 200 Hz | **仿真侧完成** | 仿真约200 Hz且无大于5 ms间隔；raw frame 和 identity/default covariance 约定已对齐，仍不复刻硬件噪声 |
+| `/livox/lidar` topic和消息大类 | **mapping 联动实测通过** | 标准 PointCloud2 被 FAST-LIVO2 实际接收；字段、point_step、raw frame 已在 DDS 样本核对，预处理输出 6,666 点 |
+| `/livox/lidar` 10 Hz | **仿真时间通过；墙钟受 RTF 限制** | 仿真时间频率约10 Hz；当前工作站 RTF≈0.06-0.07，ROS 墙钟实测约0.99-1.04 Hz |
+| `/livox/imu` 200 Hz | **仿真时间通过；墙钟受 RTF 限制** | 仿真时间约200 Hz；ROS 墙钟实测约14.7-15.4 Hz。raw frame 与 identity/default covariance 约定对齐，不复刻硬件噪声 |
 | D435图像和内参 | **仿真自身已验收，和视觉配置不一致** | RGB/depth真实渲染且参数自洽；当前 `img_en=0`，不是 lidar-only 阻塞项 |
-| FAST-LIVO2建图 | **尚未端到端验证** | 当前已完成仿真输入侧；还没有实际启动 FAST-LIVO2 并用仿真`/livox/lidar`+`/livox/imu`产出`GlobalMap.pcd` |
+| FAST-LIVO2建图输入联动 | **局部端到端通过** | Foxy chroot FAST-LIVO2 实测处理仿真输入：约20k点→6,666点，LIO/SC-PGO发布输出并成功保存GlobalMap；证据见 `reports/mapping-link-run-20261109-173837/` |
+| occupancy 全路线地图覆盖 | **尚未验收** | mapping 在机器人走到路线中段后启动，本轮只有约1.2 m后续运动；需从出生点先启动mapping再跑完整巡航 |
 | localizer定位 | **尚未端到端验证** | 还没有加载仿真生成地图并验证`/initialpose -> /slam/lidar_pose` |
 | `/scan` 导航输入 | **尚未验证** | 仿真没有运行`livox_lidar_processor`并确认字段、frame、频率和高度过滤结果 |
 | NeuPAN导航 | **尚未验证** | 缺少真实`/slam/lidar_pose`、`/scan`和`/clicked_path`闭环 |
 | `/cmd_vel2`驱动仿真 | **尚未验证** | 当前桥只订阅`/unitree_go2/cmd_vel`，尚无正式适配器 |
 | 真实地图与仿真场景几何一致性 | **本阶段不适用** | 当前使用 `data/839873.usdz`、`data/839873_collision.usd` 和 occupancy 原位坐标；尚未将 FAST-LIVO2 地图结果与该场景做定位成功率比较 |
 
-**最终判断：当前仿真处于“传感器与低层运动接口通过，三模块全链路尚未通过”阶段。** 下一阶段的最小闭环顺序应为：
+**最终判断：仿真 LiDAR/IMU 到 FAST-LIVO2 的接口与局部建图联动已通过；实时吞吐和 occupancy 全路线覆盖仍未通过验收，三模块全链路也未完成。** 下一阶段的最小顺序应为：
 
-1. 在真实 ROS2 bridge 上检查 `/livox/lidar` 的 fields、`point_step`、raw frame、QoS 和逐点 timestamp；
-2. 只读启动 FAST-LIVO2，确认仿真 `PointCloud2 + /livox/imu` 能产出前端里程计、局部点云和 `GlobalMap.pcd`；
-3. 保存仿真地图并启动 localizer，验证初始位姿、`map -> body` TF 和 `/slam/lidar_pose`；
+1. 优化 Isaac Sim 场景/渲染负载，提升 RTF，使墙钟传感器速率接近配置值；
+2. 从 occupancy 路线出生点先启动 FAST-LIVO2，再执行完整 route，验证位姿增量、关键帧覆盖和地图几何；
+3. 评估确认地图覆盖后再启动 localizer，验证初始位姿、`map -> body` TF 和 `/slam/lidar_pose`；
 4. 建图输入稳定后，再单独验证导航 processor 的 `/scan` 和指定路径 `/clicked_path`，跟随模式不在短期目标；
 5. 只有完成以上实测，才能把符合性矩阵中的“尚未验证”改为通过。

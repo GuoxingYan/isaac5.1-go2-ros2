@@ -115,6 +115,12 @@ class InteriorGSScene:
         row = int(np.floor((y - self.origin[1]) / self.scale))
         return row, col
 
+    def center_clearance(self, xy):
+        row, col = self.world_to_pixel(*xy)
+        if not (0 <= row < self.image.shape[0] and 0 <= col < self.image.shape[1]):
+            return 0.0
+        return float(self.clearance[row, col])
+
     @classmethod
     def default_path(cls, data_dir, clearance=0.45):
         """Build a deterministic safe route from the supplied occupancy map.
@@ -133,46 +139,8 @@ class InteriorGSScene:
             raise FileNotFoundError(f"Missing occupancy metadata: {metadata_path}")
         scale = float(meta["scale"])
         origin = np.asarray(meta["min"][:2], dtype=float)
-        free = image == 255
-        clearance_map = distance_transform_edt(free) * scale
-        safe = clearance_map >= float(clearance)
-
-        # Pick the largest connected safe component. A column with the most
-        # safe pixels gives a straight, collision-checked corridor in this map.
-        from scipy.ndimage import label
-        components, count = label(safe)
-        if count == 0:
-            raise RuntimeError(f"No occupancy-safe cruise corridor with clearance {clearance}")
-        sizes = np.bincount(components.ravel())
-        component = int(np.argmax(sizes[1:]) + 1)
-        columns = np.flatnonzero(np.sum(components == component, axis=0))
-        column = int(columns[np.argmax(np.sum(components[:, columns] == component, axis=0))])
-        rows = np.flatnonzero(components[:, column] == component)
-        if len(rows) < 3:
-            raise RuntimeError("Largest occupancy-safe component is too short for cruise")
-        margin = max(3, int(np.ceil(0.6 / scale)))
-        rows = rows[[min(margin, len(rows) // 3), len(rows) // 2,
-                     max(len(rows) - 1 - margin, len(rows) * 2 // 3)]]
-        rows = np.unique(rows)
-        if len(rows) < 2:
-            raise RuntimeError("Could not construct two distinct occupancy-safe waypoints")
-
-        def pixel_to_world(row, col):
-            return [
-                float(origin[0] + (image.shape[1] - col - 0.5) * scale),
-                float(origin[1] + (row + 0.5) * scale),
-            ]
-
-        poses = []
-        for row in rows:
-            x, y = pixel_to_world(int(row), column)
-            poses.append({"x": x, "y": y, "yaw": float(np.pi / 2.0)})
-        return {
-            "frame_id": "scene",
-            "loop": False,
-            "source": "data/occupancy.png + occupancy.json",
-            "poses": poses,
-        }
+        from env.occupancy_loop import plan_loop
+        return plan_loop(image, scale, origin, clearance)
 
     def validate_path(self, path_data, sample_step=0.025):
         """Reject waypoints or segments that leave the clearance-checked floor."""
@@ -221,7 +189,6 @@ class InteriorGSScene:
     def initialize(self, env, cameras, lidars, show_rgb=True):
         import omni.usd
         from pxr import Usd, UsdGeom, UsdPhysics
-        from env.gaussian_rgb import GaussianRGBRenderer
         from env.mesh_lidar import CollisionMeshDepth, load_collision_mesh
 
         stage = omni.usd.get_context().get_stage()
@@ -275,11 +242,10 @@ class InteriorGSScene:
         if abs(self.mesh_support["position"][2]) > 0.15:
             raise RuntimeError(f"Spawn support height invalid: {self.mesh_support}")
 
-        self.renderer = GaussianRGBRenderer(
-            self.gaussian_path,
-            [0.0, 0.0, 0.0],
-        )
         for rig in cameras:
+            if self.renderer is None:
+                from env.gaussian_rgb import GaussianRGBRenderer
+                self.renderer = GaussianRGBRenderer(self.gaussian_path, [0.0, 0.0, 0.0])
             rig.gaussian_renderer = self.renderer
             rig.depth_provider = CollisionMeshDepth(env, rig, metric_mesh)
         self.evidence.update({
@@ -287,10 +253,10 @@ class InteriorGSScene:
             "collision_api_meshes": collision_prims,
             "mesh_collision_api_meshes": mesh_collision_prims,
             "support": self.mesh_support,
-            "rgb_source": "839873.usdz NuRec Gaussians",
+            "rgb_source": "839873.usdz NuRec Gaussians" if cameras else "disabled for mapping run",
             "metric_source": "839873_collision.usd triangles",
             "coordinate_frame": "data/ source frame; no recentering",
-            "renderer": self.renderer.info,
+            "renderer": self.renderer.info if getattr(self, "renderer", None) is not None else None,
         })
 
         if show_rgb and cameras:
