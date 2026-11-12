@@ -24,7 +24,7 @@ import numpy as np
 
 DATA_DIR = os.environ.get("GO2_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "our-go2-bridge"))
 CMD_VEL_FILE = os.path.join(DATA_DIR, "cmd_vel.json")
-
+print(f"DATA_DIR: {DATA_DIR}")
 
 class Go2Bridge(Node):
     def __init__(self):
@@ -168,6 +168,11 @@ class Go2Bridge(Node):
         odom.pose.pose.orientation.y = ori[1]
         odom.pose.pose.orientation.z = ori[2]
         odom.pose.pose.orientation.w = ori[3]
+        state = data.get("robot_state", {})
+        linear = state.get("linear_velocity_body_m_s", [0.0, 0.0, 0.0])
+        angular = state.get("angular_velocity_body_rad_s", [0.0, 0.0, 0.0])
+        odom.twist.twist.linear.x, odom.twist.twist.linear.y, odom.twist.twist.linear.z = linear
+        odom.twist.twist.angular.x, odom.twist.twist.angular.y, odom.twist.twist.angular.z = angular
         self.odom_pub.publish(odom)
         self.standard_odom_pub.publish(odom)
 

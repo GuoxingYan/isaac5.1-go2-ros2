@@ -1,6 +1,7 @@
 """Scene setup for the supplied 839873 Gaussian and collision assets."""
 import json
 import hashlib
+import math
 from pathlib import Path
 
 import numpy as np
@@ -85,6 +86,34 @@ class InteriorGSScene:
         except (FileNotFoundError, json.JSONDecodeError):
             return default
 
+    @staticmethod
+    def path_start_pose(path_data):
+        """Read a scene path's first planar pose, including ROS quaternions."""
+        if path_data.get("frame_id", "scene") != "scene":
+            raise ValueError("InteriorGS spawn path must use frame_id=scene")
+        poses = path_data.get("poses")
+        if not poses:
+            raise ValueError("InteriorGS spawn path contains no poses")
+        first = poses[0]
+        xy = (float(first["x"]), float(first["y"]))
+        if not all(math.isfinite(value) for value in xy):
+            raise ValueError("Spawn position must be finite")
+        quaternion_keys = ("qx", "qy", "qz", "qw")
+        if any(key in first for key in quaternion_keys):
+            if not all(key in first for key in quaternion_keys):
+                raise ValueError("Spawn quaternion requires qx, qy, qz and qw")
+            q = np.asarray([float(first[key]) for key in quaternion_keys])
+            norm = float(np.linalg.norm(q))
+            if not np.isfinite(norm) or norm < 1e-12:
+                raise ValueError("Spawn quaternion must be finite and nonzero")
+            x, y, z, w = q / norm
+            yaw = math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
+        else:
+            yaw = float(first.get("yaw", 0.0))
+        if not math.isfinite(yaw):
+            raise ValueError("Spawn yaw must be finite")
+        return xy, yaw
+
     def _make_spawn(self, xy, yaw, mode):
         row, col = self.world_to_pixel(*xy)
         if not (0 <= row < self.image.shape[0] and 0 <= col < self.image.shape[1]):
@@ -144,6 +173,8 @@ class InteriorGSScene:
 
     def validate_path(self, path_data, sample_step=0.025):
         """Reject waypoints or segments that leave the clearance-checked floor."""
+        clearance_required = float(path_data.get("planning", {}).get(
+            "minimum_clearance_m", self.required_clearance))
         poses = path_data.get("poses", [])
         if path_data.get("frame_id", "scene") != "scene" or len(poses) < 2:
             raise ValueError("InteriorGS path must have at least two scene-frame poses")
@@ -152,7 +183,7 @@ class InteriorGSScene:
             row, col = self.world_to_pixel(*point)
             if not (0 <= row < self.image.shape[0] and 0 <= col < self.image.shape[1]):
                 raise ValueError(f"Path waypoint {index} is outside occupancy: {point.tolist()}")
-            if self.clearance[row, col] < self.required_clearance:
+            if self.clearance[row, col] + 1e-9 < clearance_required:
                 raise ValueError(f"Path waypoint {index} lacks clearance: {point.tolist()}")
         endpoints = points[1:]
         if path_data.get("loop", False):
@@ -164,8 +195,37 @@ class InteriorGSScene:
                 row, col = self.world_to_pixel(*point)
                 if not (0 <= row < self.image.shape[0] and 0 <= col < self.image.shape[1]):
                     raise ValueError(f"Path segment {index} leaves occupancy: {point.tolist()}")
-                if self.clearance[row, col] < self.required_clearance:
+                if self.clearance[row, col] + 1e-9 < clearance_required:
                     raise ValueError(f"Path segment {index} lacks clearance: {point.tolist()}")
+
+    @staticmethod
+    def minimum_area_rectangle_path(path_data, clearance=0.15):
+        """Reduce route nodes to the four corners of their minimum-area rectangle."""
+        import cv2
+
+        poses = path_data.get("poses", [])
+        points = np.asarray([[float(p["x"]), float(p["y"])] for p in poses], dtype=np.float32)
+        if len(points) < 3:
+            raise ValueError("At least three route nodes are needed for a bounding rectangle")
+        corners = cv2.boxPoints(cv2.minAreaRect(points)).astype(np.float64)
+        result = []
+        for index, (x, y) in enumerate(corners):
+            next_point = corners[(index + 1) % len(corners)]
+            delta = next_point - corners[index]
+            result.append({"x": float(x), "y": float(y), "yaw": float(np.arctan2(delta[1], delta[0]))})
+        return {
+            "frame_id": path_data.get("frame_id", "scene"),
+            "loop": True,
+            "source": "minimum-area rectangle of scene route nodes",
+            "poses": result,
+            "planning": {
+                "minimum_clearance_m": float(clearance),
+                "source_waypoint_count": len(poses),
+                "route_length_m": float(sum(
+                    np.linalg.norm(corners[(i + 1) % 4] - corners[i]) for i in range(4)
+                )),
+            },
+        }
 
     def configure(self, cfg):
         import isaaclab.sim as sim_utils

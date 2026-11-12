@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Go2 巡航实时监控</title>
+<style>
+:root{color-scheme:dark;--bg:#101719;--panel:#172326;--line:#2a3a3d;--text:#edf3ef;--muted:#9aaba6;--mint:#91e2bb;--amber:#ffc66d;--red:#ff8174;--cyan:#75d7e5}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#111a1c,#0b1012 55%,#172123);color:var(--text);font:15px/1.45 "Avenir Next","Noto Sans CJK SC",sans-serif}
+header{height:62px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#111a1ce8;position:sticky;top:0;z-index:2}
+h1{font-size:18px;margin:0;font-weight:650}.connection{font-size:12px;color:var(--muted);display:flex;gap:9px;align-items:center}.lamp{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px currentColor}.lamp.live{background:var(--mint)}.lamp.bad{background:var(--red)}
+main{display:grid;grid-template-columns:minmax(360px,1.25fr) minmax(360px,.85fr);gap:1px;min-height:calc(100vh - 62px);background:var(--line)}section{background:var(--bg);padding:20px;min-width:0}.map-wrap{height:calc(100vh - 112px);min-height:460px;display:grid;place-items:center;background:#0c1214;border:1px solid var(--line);position:relative}.map-wrap img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated}.map-label{position:absolute;left:12px;top:10px;color:var(--muted);font-size:11px;letter-spacing:.04em}.right{display:flex;flex-direction:column;gap:18px}.state-line{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:13px}.state{font-size:18px;font-weight:650}.state.turning_to_segment{color:var(--amber)}.state.driving,.state.approaching_waypoint{color:var(--mint)}.state.finished{color:var(--cyan)}.state.aborted{color:var(--red)}.small{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}.metric{background:var(--panel);padding:12px 14px;min-height:76px}.metric span{display:block;color:var(--muted);font-size:11px;margin-bottom:7px}.metric strong{font-size:17px;font-variant-numeric:tabular-nums;font-weight:600;overflow-wrap:anywhere}.wide{grid-column:1/-1}.section-title{color:var(--muted);font-size:11px;text-transform:uppercase;margin:0 0 8px;letter-spacing:.08em}.sensors{display:flex;gap:8px}.sensor{background:var(--panel);border:1px solid var(--line);padding:8px 11px;font-size:12px}.sensor.on{color:var(--mint);border-color:#3b705c}.sensor.off{color:var(--muted)}.reason{color:var(--red);font-size:12px;white-space:pre-wrap}.footer{margin-top:auto;color:var(--muted);font-size:11px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:850px){main{grid-template-columns:1fr}.map-wrap{height:55vh;min-height:340px}header{padding:0 14px}section{padding:14px}}
+</style>
+</head>
+<body>
+<header><h1>GO2 / 巡航状态</h1><div class="connection"><i id="lamp" class="lamp"></i><span id="connection">等待仿真数据</span></div></header>
+<main>
+<section><div class="map-wrap"><div class="map-label">OCCUPANCY · 实时位置 / 朝向 / 路线</div><img id="map" alt="occupancy 巡航叠加图"></div></section>
+<section class="right">
+<div class="state-line"><div><div class="small">巡航状态</div><div id="state" class="state">等待数据</div></div><div id="waypoint" class="small">WP -- / --</div></div>
+<div class="grid">
+<div class="metric"><span>仿真时间</span><strong id="time">--</strong></div><div class="metric"><span>目标距离</span><strong id="distance">--</strong></div>
+<div class="metric wide"><span>位置 XYZ / m</span><strong id="position">--</strong></div><div class="metric wide"><span>姿态 RPY / deg</span><strong id="rpy">--</strong></div>
+<div class="metric wide"><span>世界线速度 XYZ / m·s⁻¹</span><strong id="vworld">--</strong></div><div class="metric wide"><span>机体线速度 XYZ / m·s⁻¹</span><strong id="vbody">--</strong></div>
+<div class="metric wide"><span>机体角速度 XYZ / rad·s⁻¹</span><strong id="wbody">--</strong></div><div class="metric"><span>航向误差 / rad</span><strong id="yawerr">--</strong></div>
+<div class="metric"><span>路径偏差 / m</span><strong id="patherr">--</strong></div><div class="metric"><span>中心 clearance / m</span><strong id="clearance">--</strong></div>
+<div class="metric"><span>机身 up_z</span><strong id="upz">--</strong></div><div class="metric wide"><span>命令 vx / vy / wz</span><strong id="command">--</strong></div>
+</div>
+<div><p class="section-title">传感器</p><div class="sensors"><span id="lidar" class="sensor">LiDAR</span><span id="imu" class="sensor">IMU</span><span id="camera" class="sensor">RGB-D</span></div></div>
+<div id="abort" class="reason"></div><div class="footer">只读监控 · 页面不会发送运动指令</div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id),fmt=(v,n=2)=>Array.isArray(v)?v.map(x=>Number(x).toFixed(n)).join(" / "):"--",setSensor=(id,on,label)=>{$(id).className=`sensor ${on?"on":"off"}`;$(id).textContent=`${label} ${on?"ON":"OFF"}`};
+function updateMap(){const image=$("map");image.src=`/api/map?t=${Date.now()}`}
+async function poll(){try{const response=await fetch(`/api/state?t=${Date.now()}`,{cache:"no-store"});if(!response.ok)throw Error("状态文件尚未生成");const d=await response.json(),r=d.robot_state||{},c=d.cruise||{},diag=c.diagnostics||{};$("lamp").className="lamp live";$("connection").textContent=`在线 · frame ${d.frame??"--"}`;$("state").textContent=c.state||"手动控制";$("state").className=`state ${(c.state||"").replaceAll(" ","_")}`;$("waypoint").textContent=c.waypoint_count?`WP ${Math.min((c.waypoint_index??0)+1,c.waypoint_count)} / ${c.waypoint_count}`:"无巡航路径";$("time").textContent=`${Number(d.simulation_time||0).toFixed(2)} s`;$("distance").textContent=diag.target_distance_m==null?"--":`${Number(diag.target_distance_m).toFixed(2)} m`;$("position").textContent=fmt(r.position_m);$("rpy").textContent=fmt(r.rpy_deg,1);$("vworld").textContent=fmt(r.linear_velocity_world_m_s);$("vbody").textContent=fmt(r.linear_velocity_body_m_s);$("wbody").textContent=fmt(r.angular_velocity_body_rad_s);$("yawerr").textContent=diag.yaw_error_rad==null?"--":Number(diag.yaw_error_rad).toFixed(3);$("patherr").textContent=diag.path_error_m==null?"--":Number(diag.path_error_m).toFixed(3);$("clearance").textContent=diag.clearance_m==null?"--":Number(diag.clearance_m).toFixed(3);$("upz").textContent=r.body_up_z==null?"--":Number(r.body_up_z).toFixed(3);$("command").textContent=fmt(c.command_body_vx_vy_omega);$("abort").textContent=c.abort_reason||"";const profile=d.sensor_profile||{};setSensor("lidar",!!profile.lidar,"LiDAR");setSensor("imu",!!profile.imu,"IMU");setSensor("camera",!!profile.camera,"RGB-D");updateMap()}catch(e){$("lamp").className="lamp bad";$("connection").textContent=e.message}}
+poll();setInterval(poll,500);
+</script>
+</body>
+</html>

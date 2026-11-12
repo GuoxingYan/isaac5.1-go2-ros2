@@ -5,6 +5,16 @@ from env.occupancy_loop import plan_loop
 from env.interiorgs_scene import InteriorGSScene
 
 class LoopTests(unittest.TestCase):
+    def test_minimum_area_rectangle_reduces_scene_route_to_four_safe_corners(self):
+        source = InteriorGSScene.default_path('data', .2)
+        rectangle = InteriorGSScene.minimum_area_rectangle_path(source, .15)
+        self.assertEqual(len(source['poses']), 46)
+        self.assertEqual(len(rectangle['poses']), 4)
+        self.assertTrue(rectangle['loop'])
+        scene = InteriorGSScene('data', seed=1, clearance=.2,
+            spawn_xy=(rectangle['poses'][0]['x'], rectangle['poses'][0]['y']))
+        scene.validate_path(rectangle)
+
     def test_scene_loop(self):
         path = InteriorGSScene.default_path('data', .2)
         again = InteriorGSScene.default_path('data', .2)

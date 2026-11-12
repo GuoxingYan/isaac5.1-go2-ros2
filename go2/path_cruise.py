@@ -13,7 +13,7 @@ def _angle_delta(angle):
 
 
 class ScenePathCruise:
-    """Track ordered segments; a fresh external ROS command retains priority.
+    """Rotate in place to each segment, then drive forward only.
 
     The map check uses only the robot center, not a collision footprint.  This
     controller is a simulator motion source, not an obstacle avoidance system.
@@ -21,7 +21,9 @@ class ScenePathCruise:
 
     def __init__(self, path_file, loop=True, position_tolerance=0.10,
                  clearance_check=None, required_clearance=0.2,
-                 max_path_error=0.30, stall_seconds=8.0, stall_distance=0.10):
+                 max_path_error=0.30, stall_seconds=8.0, stall_distance=0.10,
+                 corner_slowdown_distance=0.50, yaw_tolerance=0.12,
+                 min_forward_speed=0.27, yaw_realign_tolerance=0.25):
         if isinstance(path_file, dict):
             self.path_file = "generated from occupancy map"
             data = path_file
@@ -45,6 +47,10 @@ class ScenePathCruise:
         self.max_path_error = float(max_path_error)
         self.stall_seconds = float(stall_seconds)
         self.stall_distance = float(stall_distance)
+        self.corner_slowdown_distance = float(corner_slowdown_distance)
+        self.yaw_tolerance = float(yaw_tolerance)
+        self.min_forward_speed = float(min_forward_speed)
+        self.yaw_realign_tolerance = float(yaw_realign_tolerance)
         self.index = 1
         self.completed_loops = 0
         self.finished = False
@@ -52,17 +58,10 @@ class ScenePathCruise:
         self.abort_reason = None
         self.command = np.zeros(3, dtype=np.float32)
         self.diagnostics = {}
+        self.phase = "turn"
         self._watch_time = None
         self._watch_xy = None
         self._watch_yaw = None
-
-    def _safe_shortcut(self, start, end):
-        if self.clearance_check is None:
-            return True
-        distance = float(np.linalg.norm(end - start))
-        count = max(1, int(math.ceil(distance / 0.025)))
-        return all(self.clearance_check(start + t * (end - start)) + 1e-9 >= self.required_clearance
-                   for t in np.linspace(0., 1., count + 1))
 
     @property
     def start_xy(self):
@@ -89,7 +88,7 @@ class ScenePathCruise:
             self.index += 1
 
     def step(self, position, yaw, sim_time, up_vector_z=1.0):
-        """Compute one bounded command from a truth pose and simulation time."""
+        """Compute a mutually exclusive yaw or forward command."""
         position = np.asarray(position, dtype=float)[:2]
         yaw = float(yaw)
         if self.finished or self.aborted:
@@ -100,43 +99,33 @@ class ScenePathCruise:
             self.diagnostics = {"state": "aborted", "body_up_z": float(up_vector_z)}
             return self.command.copy()
 
-        # Intermediate waypoints may be passed only close to the segment.
-        # Unlike radius-only advancement, this also detects an overshot point.
-        for _ in range(len(self.waypoints)):
-            start = self.waypoints[self.index - 1][:2]
-            target = self.waypoints[self.index][:2]
-            segment = target - start
-            length = float(np.linalg.norm(segment))
-            distance = float(np.linalg.norm(target - position))
-            if length > 1e-6:
-                progress = float(np.dot(position - start, segment) / (length * length))
-                closest = start + np.clip(progress, 0., 1.) * segment
-                path_error = float(np.linalg.norm(position - closest))
-            else:
-                progress, path_error = 1.0, distance
-            final = self.index == len(self.waypoints) - 1 and not self.loop
-            tolerance = self.final_tolerance if final else self.position_tolerance
-            passed = not final and progress >= 1.0 and path_error <= self.position_tolerance
-            advance = distance <= tolerance or passed
-            if advance and not final:
-                next_index = (self.index + 1) % len(self.waypoints)
-                next_target = self.waypoints[next_index][:2]
-                next_segment = next_target - target
-                norm = np.linalg.norm(next_segment)
-                lookahead = target + next_segment * min(1., .25 / max(norm, 1e-6))
-                advance = self._safe_shortcut(position, lookahead)
-            if advance:
-                self._advance()
-                if self.finished:
-                    self.command[:] = 0.0
-                    self.diagnostics = {"state": "finished", "distance_to_goal_m": distance}
-                    return self.command.copy()
-                continue
-            break
-        else:
-            self._stop("all waypoints were exhausted without a usable segment")
+        target = self.waypoints[self.index][:2]
+        final = self.index == len(self.waypoints) - 1 and not self.loop
+        tolerance = self.final_tolerance if final else self.position_tolerance
+        start = self.waypoints[self.index - 1][:2]
+        segment = target - start
+        length = float(np.linalg.norm(segment))
+        if length <= 1e-6:
+            self._stop(f"waypoint segment {self.index} has zero length")
             return self.command.copy()
 
+        if self.phase == "drive" and np.linalg.norm(target - position) <= tolerance:
+            if final:
+                self.finished = True
+                self.command[:] = 0.0
+                self.diagnostics = {"state": "finished", "distance_to_goal_m": float(np.linalg.norm(target-position))}
+                return self.command.copy()
+            self._advance()
+            self.phase = "turn"
+            target = self.waypoints[self.index][:2]
+            start = self.waypoints[self.index - 1][:2]
+            segment = target - start
+            length = float(np.linalg.norm(segment))
+
+        distance = float(np.linalg.norm(target - position))
+        progress = float(np.clip(np.dot(position - start, segment) / (length * length), 0., 1.))
+        closest = start + progress * segment
+        path_error = float(np.linalg.norm(position - closest))
         clearance = None if self.clearance_check is None else self.clearance_check(position)
         if clearance is not None and clearance + 1e-9 < self.required_clearance:
             self._stop(f"robot center clearance {clearance:.3f} m < {self.required_clearance:.3f} m")
@@ -146,32 +135,38 @@ class ScenePathCruise:
             self.diagnostics = {"state": "aborted", "clearance_m": clearance, "path_error_m": path_error}
             return self.command.copy()
 
-        # Aim heading at a bounded lookahead on this segment so lateral
-        # drift is corrected by steering, rather than relying on weak vy alone.
-        along = np.clip(progress * length + 0.75, 0., length)
-        heading_point = start + (along / max(length, 1e-6)) * segment
-        heading_vector = heading_point - position
-        desired_yaw = math.atan2(heading_vector[1], heading_vector[0])
+        desired_yaw = math.atan2(segment[1], segment[0])
         yaw_error = _angle_delta(desired_yaw - yaw)
-        # Point at the current segment, never at the following waypoint's yaw.
-        # Rotate in place at large corners instead of cutting across obstacles.
-        turning = abs(yaw_error) > 0.65
-        wz = float(np.clip(1.5 * yaw_error, -0.6, 0.6))
-        if turning:
-            vx = vy = 0.0
-        else:
-            forward = math.cos(yaw) * (target[0] - position[0]) + math.sin(yaw) * (target[1] - position[1])
-            lateral = -math.sin(yaw) * (target[0] - position[0]) + math.cos(yaw) * (target[1] - position[1])
-            # Avoid the old double attenuation near densely spaced points.
-            vx = float(np.clip(0.8 * forward, -0.32, 0.32))
-            if forward > 0.03 and distance > tolerance:
-                vx = max(vx, 0.27)
-            vy = float(np.clip(0.7 * lateral, -0.10, 0.10))
-        self.command[:] = (vx, vy, wz)
-        self.diagnostics = {"state": "turning" if turning else "tracking", "target_distance_m": distance,
-                            "path_error_m": path_error, "clearance_m": clearance,
-                            "yaw_error_rad": yaw_error, "segment_progress": progress}
+        if self.phase == "drive" and abs(yaw_error) > self.yaw_realign_tolerance:
+            self.phase = "turn"
+        if self.phase == "turn":
+            if abs(yaw_error) <= self.yaw_tolerance:
+                self.phase = "drive"
+            else:
+                wz = float(np.clip(1.5 * yaw_error, -0.6, 0.6))
+                if abs(wz) < 0.20:
+                    wz = math.copysign(0.20, yaw_error)
+                self.command[:] = (0.0, 0.0, wz)
+                self.diagnostics = {"state": "turning_to_segment", "phase": self.phase,
+                                    "target_distance_m": distance, "path_error_m": path_error,
+                                    "clearance_m": clearance, "yaw_error_rad": yaw_error,
+                                    "speed_scale": 0.0}
+                self._check_stall(position, yaw, sim_time)
+                return self.command.copy()
 
+        speed_scale = min(1.0, max(0.0, distance / max(self.corner_slowdown_distance, 1e-6)))
+        vx = max(self.min_forward_speed, 0.32 * speed_scale) if distance > tolerance else 0.0
+        self.command[:] = (vx, 0.0, 0.0)
+        self.diagnostics = {"state": "approaching_waypoint" if distance < self.corner_slowdown_distance else "driving",
+                            "phase": self.phase, "target_distance_m": distance,
+                            "path_error_m": path_error, "clearance_m": clearance,
+                            "yaw_error_rad": yaw_error, "segment_progress": progress,
+                            "speed_scale": speed_scale}
+
+        self._check_stall(position, yaw, sim_time)
+        return self.command.copy()
+
+    def _check_stall(self, position, yaw, sim_time):
         if self._watch_time is None or sim_time < self._watch_time:
             self._watch_time, self._watch_xy, self._watch_yaw = float(sim_time), position.copy(), yaw
         elif sim_time - self._watch_time >= self.stall_seconds:
@@ -181,7 +176,6 @@ class ScenePathCruise:
             if motion < self.stall_distance and rotation < 0.30:
                 self._stop(f"no progress for {self.stall_seconds:.1f} sim s: moved {motion:.3f} m, rotated {rotation:.3f} rad")
                 self.diagnostics["state"] = "aborted"
-        return self.command.copy()
 
     def update(self, env, ctrl):
         if ctrl.ros_commands:

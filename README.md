@@ -3,16 +3,20 @@
 使用工作站现有 `conda activate isaacsim_510` 环境（Python 3.11 / Isaac Lab 2.3），无需 Windows、WSL2 或 DLL 补丁。
 
 ```bash
-./run_go2.sh                         # GUI，真实相机与 RTX LiDAR
+./run_go2.sh                         # GUI，键盘手动控制（InteriorGS 默认 flat policy）
+./run_go2.sh --control-mode cruise   # occupancy 路径自动巡航（默认简化为四角矩形）
+./run_go2.sh --control-mode cruise --use-path-json --path-file data/path_occupancy.json  # 按 JSON 原节点巡航
 ./run_go2.sh --headless --self-test   # 六方向运动、RGBD、点云验证及 HTML 报告
-./run_go2.sh --policy flat            # 平地策略；默认 rough
+./run_go2.sh --policy flat            # 平地策略（InteriorGS 默认 flat）
 ./run_go2.sh num_envs=3               # 多机器人
 ./ros2/start_bridge.sh               # 独立 ROS2 Humble 发布进程
 ./ros2/start_bridge.sh --rviz-only   # 使用已有桥接进程打开 RViz
 ./ros2/run_probe.sh                  # 记录收到的真实 ROS2 消息
 ```
 
-GUI 中点击仿真窗口使其获得焦点，W/S 前后，A/D 横移，Z/C 旋转，松键停止，SPACE 紧急停止，1–9 / F1–F12 选择机器人。支持组合键。
+`--policy flat` 选择平地运动策略，不代表巡航；`sensor.enable_camera=False` 只关闭相机传感器，也不控制显示界面。GUI 默认仍为键盘控制，只有 `--control-mode cruise` 才沿 occupancy 生成/指定的 waypoint 自动巡航。GUI 中点击仿真窗口使其获得焦点，W/S 前后，A/D 横移，Z/C 旋转，松键停止，SPACE 紧急停止，1–9 / F1–F12 选择机器人。
+
+默认巡航路径把 occupancy 安全路线的所有节点简化为最小面积外接矩形四角，并沿四边闭环；四边按 0.15 m 机器人中心 clearance 采样校验。使用外部路径时加 `--use-path-json`，文件由 `--path-file` 指定，默认路径为 `data/path_occupancy.json`；JSON 必须用 `frame_id: scene`，不会隐式把 `map` 坐标当作 scene 坐标。巡航每段先只输出 `angular.z` 原地慢速对准，再只输出正向 `linear.x` 直行；临近 waypoint 减速，到点后进入下一段并重复转向/直行。巡航不会命令横向 `linear.y`，任一时刻最多一个速度分量非零。该路径检查不等于 Go2 机身/腿部 footprint 的碰撞保证。每次巡航启动时输出路线 PNG；运行时叠加图写入 `$GO2_DATA_DIR/occupancy_overlay.png`，每 10 个仿真周期刷新。仿真终端每秒打印位置、姿态、世界/机体系速度及巡航诊断。PNG 是运行时地图快照，不是浏览器前端页面。
 
 默认配置使用 `interiorgs`，直接加载 `data/` 下的 839873 Gaussian、碰撞和 occupancy 资产；其他程序化障碍物和仓库环境仍可通过 `env_name=...` 显式选择。未实际运行的场景不能视为已验收。
 
@@ -215,16 +219,18 @@ GO2_REPORT_DIR=reports/our-go2 ./ros2/run_probe.sh
 
 ## 三模块联调接口说明（2026-11-09）
 
-本节把仿真、建图与定位、导航看成一条完整的接口链，而不是三个彼此独立的程序。结论分为四种证据等级：
+本节区分仿真、建图、定位和导航各自的验收状态，避免把其中一段通过误写成全链路通过。结论分为四种证据等级：
 
 - **源码/配置确认**：来自本仓库、`/home/foxy_box` 中的启动脚本、节点源码和 YAML 配置。
 - **真实数据确认**：来自真实 Go2 rosbag 的 `metadata.yaml`、运行日志或消息字段。
 - **仿真验收确认**：来自 `reports/our-go2/results.json`、`ros_topics.json` 和图像证据。
-- **尚未端到端确认**：尚未把当前仿真数据实际喂给 FAST-LIVO2、localizer 和 NeuPAN 并完成闭环，不能把它写成通过。
+- **尚未端到端确认**：只用于当前尚未实际验证的模块；不能把仿真、建图和定位通过扩展解释成导航闭环通过。
 
 完整的带流程图、参数对照表、差异分级和图片证据的离线报告位于 [`reports/module_interface_report.html`](reports/module_interface_report.html)。
 
-当前阶段的“仿真如何联动 FAST-LIVO2 建图”专项报告位于 [`reports/mapping_simulation_report.html`](reports/mapping_simulation_report.html)。本轮已实际启动仿真、ROS2 文件桥和只读 FAST-LIVO2/SC-PGO mapping，并保存输入/输出话题、算法日志、GlobalMap 与 SVG 可视化，结果见 [`reports/mapping-link-run-20261109-173837/`](reports/mapping-link-run-20261109-173837/)。本轮只验证 mapping 输入与局部输出，不启动 localizer 或 navigation processor。
+FAST-LIVO2 建图专项报告位于 [`reports/mapping_simulation_report.html`](reports/mapping_simulation_report.html)。2026-11-09 的 mapping 运行记录见 [`reports/mapping-link-run-20261109-173837/`](reports/mapping-link-run-20261109-173837/)，覆盖仿真传感器、ROS2 文件桥和 Foxy FAST-LIVO2/SC-PGO 的数据链路。
+
+当前验收状态已更新：仿真传感器经 Foxy 文件桥输入 FAST-LIVO2，建图输出地图并供 localizer 使用，仿真 + 建图/定位链路已打通。2026-11-10 的 PCD-only 装载探针曾因缺少配套 `opti_poses.txt` 而失败，这是历史诊断，不代表当前状态；对应报告 [`reports/localization-nav-20261110/localization_nav_report.html`](reports/localization-nav-20261110/localization_nav_report.html) 记录的是当时的失败阶段。导航 processor、NeuPAN 画线导航及 `/cmd_vel2` 到仿真控制的完整运动闭环仍需单独验收。
 
 ### 当前建图专项实现状态
 
@@ -257,6 +263,32 @@ scene-frame waypoints + Go2 当前真值 pose/yaw
 - `/livox/lidar` 构造与真实 bag 相同的 `x/y/z/intensity/tag/line/timestamp` 字段布局（`point_step=26`）。本轮 DDS 实测 fields、header frame、width、point_step 与预期一致；FAST-LIVO2 日志实测逐点时间被转换为 `0–83.32 ms` 的扫描相对时间。算法读到 IMU 并完成初始化/重力对齐，但 580 帧日志均显示 `After UndistortPcl, IMUpose size=0`，因此本轮没有确认 IMU 轨迹实际用于扫描去畸变。现有证据不能单独确定根因；要检查扫描相对时间与 header/IMU 时间窗口是否重叠、仿真时钟是否一致、IMU 是否覆盖整帧、IMU 采样间隔/队列状态和该版本去畸变实现的条件。`mid360.yaml` 的 `imu_time_offset=0`、LiDAR→IMU 外参为 `[-0.011,-0.02329,0.04412]`/R=I 是配置事实，不足以证明时间同步或去畸变输入队列有效。
 - TF 明确提供 `body -> livox_frame` 和 `body -> lidar_livox` 两个传感器别名，body-to-LiDAR 使用导航脚本的 `[0.187, 0, 0.0803]` 和 Y 轴 13°；FAST-LIVO2 的 LiDAR-to-IMU 外参仍由其 `mid360.yaml` 消费，不在点云中重复变换。
 - 本阶段不把 RGB-D、仿真 odom/root state、定位 `map -> body` 或导航 `/cmd_vel2` 当作 FAST-LIVO2 建图输入。FAST-LIVO2/SC-PGO 已在独立目录运行并成功保存 8,461 点 `GlobalMap.pcd`、42 个关键帧 scans；`topics_motion` rosbag 的 SQLite 文件可复查到 `/aft_mapped_to_init`、`/cloud_registered_local` 各 71 条。另有 `topics_final_metadata.yaml` 记载各 79 条，但对应 `topics_final_0.db3` 不在本次证据目录，故不作为已验证录包计数。mapping 从机器人已到路线中段后才启动，后续局部运动约 1.2 m；相对位姿增量约 `(1.204, -0.143) m`。这是局部联动证据，不是从路线起点覆盖全场景的地图验收。
+
+### 先验地图定位与画线导航分阶段验收
+
+本阶段区分“仿真建图/定位链路”与“导航运动闭环”。当前仿真 + FAST-LIVO2 建图 + localizer 定位已打通；导航 processor、NeuPAN 画线导航及速度命令驱动仿真仍需独立验收。真值仅用于初始化或离线对照，不替代定位输出 `/slam/lidar_pose`。
+
+**当前状态（2026-11-12）：**
+
+- 仿真传感器数据经 Foxy ROS 2 文件桥送入 FAST-LIVO2；FAST-LIVO2/SC-PGO 建图结果能够用于 localizer，仿真 + 建图/定位流程已打通。
+- 2026-11-10 以下 PCD-only 探针记录仅描述当时诊断过程，不能作为当前定位未通过的结论；地图装载问题已在后续流程中解决。
+- 本次文档更新依据用户确认的最新联调结果；本 README 不声称导航 `/scan`、NeuPAN 路径跟踪或 `/cmd_vel2` 仿真运动闭环也已通过。
+
+- `data/GlobalMap_5cm.pcd` 可解析，头部声明 236,005 点，所有 XYZ 有限，范围为 X `[-0.120, 6.537] m`、Y `[-11.440, 0.120] m`、Z `[-0.120, 2.801] m`。`data/path_occupancy.json` 的四个航点均落在 PCD XY 包围盒内；PCD 平面投影与 occupancy 的主要墙体/内部结构视觉相符，但未量化配准误差，因此 `map↔scene` 仍未正式验证。
+- 指定 PCD 和独立探针目录副本 SHA-256 均为 `f74160fd1af11462573ff881203a6e88e2d4353e7e9d0dfad872bae5192b533a`。探针只使用该 PCD，localizer 日志报告 `/root/sim2real_localization_probe/map/opti_poses.txt` 无法打开，随后 `m_aligner LoadMapData failed`。这说明当前 loader 所需地图目录不接受 PCD-only 输入；不能据此判定点云文件损坏。
+- 不从 `outputs/fastlivo-map-20261107/`、旧 mapping 运行或 `/root/localization_map` 借用 `opti_poses.txt`、`odom_poses.txt`、`gravity_alignment.txt` 或 `Scans/`。必须使用与这份 PCD 同一次 mapping 导出的配套数据，或由可信来源重新导出并确认同源。
+- 路径 occupancy 中心线每段最小障碍 clearance 为 0.25 m，但 B2→C 段末端附近的 footprint 网格检查有 3 个路线中心采样点包含非 free 栅格；这不是 USD 碰撞实测，但导航开始前必须重新核实 C 端几何风险。详见同目录 `path_occupancy_safety.html`。
+- 上述四条是 2026-11-10 探针当时的诊断记录；后续联调已打通仿真建图/定位。其关于当时局部地图几何和路径 footprint 的观察仍是历史检查结果，不等于当前导航验收。
+
+**后续导航验收顺序与门槛：**
+
+1. 从路径首 pose 设置仿真出生位置与朝向；比较 PCD、occupancy、碰撞 mesh 的几何特征并明确 `T_map_scene`，不可仅依据数值范围相近就认定同一坐标系。
+2. 先执行 `/home/foxy_box/root/enter_foxy_sim_env.sh`，核对 Foxy 环境、ROS domain 与桥接话题。启动无巡航仿真及传感器桥，等待 `/livox/lidar`、`/livox/imu` 稳定；再启动 localizer launch（它也会启动 FAST-LIVO2 前端），确认先验地图加载成功以及实时点云、IMU、`/cloud_registered_local`、`/aft_mapped_to_init` 输入有效。
+3. 根据 localizer 的 `local_frame=lidar`、`map_frame=map` 和已验证外参，计算路径首 pose 对应的 LiDAR 初值并只发一次 `/initialpose`。仿真真值只用于该初始化和后续 oracle 对照；保留仿真 `odom→body` 真值，不与定位 TF 重复发布同一 child frame。验收静止时定位输出有效、frame 语义清楚、相对真值稳定。
+4. 静止定位通过后才做低速短直线非导航运动并停车；比较定位与真值在同一 frame 下的位置/航向增量、连续性和停车稳定性。失败则停止在定位阶段，不启动 track2。
+5. 动态定位通过后复核路径 C 端 footprint 风险，再启动 `/scan` 处理、track2 和 `path_occupancy.json` 路径发布。确认 planner 订阅路径后才接通 `/cmd_vel2` 仿真控制；保留限幅、命令超时停车和异常停车。
+
+**初始位姿适配限制：** 当前文件桥的 oracle `/initialpose` 会在仿真开始时重复发布，并将 `odom` 下 body pose 原样标成 `map`；它既不是一次性发布，也未应用 body↔LiDAR 外参及 map↔scene 变换。本流程不启用这个开关。实现仿真侧一次性发布前，必须确认 localizer 对 `/initialpose` 所期望的刚体 frame，并按已验证的 `T_map_scene` 与 body/LiDAR 外参转换；定位 `map→body` 不由仿真真值 TF 伪造。
 
 ### 1. 总体架构与数据流
 
@@ -434,7 +466,7 @@ FAST-LIVO2 以 LiDAR-IMU 紧耦合里程计为前端，当前 `mid360.yaml` 配�
 | 导航 body-LiDAR 外参 `[0.187,0,0.0803]`、绕Y 13°；旧仿真 LiDAR `[0.2,0,0.2]`、rpy全0 | `/scan`、地图点云、机器人位姿可能出现平移/俯仰误差 | 当前 MID360 传感器和 TF 已采用导航处理器的安装位姿；这只解决仿真输入几何，不修改导航算法 |
 | IMU实测 orientation 常为 identity/covariance 0；旧仿真用 `orientation_covariance[0]=-1` | 下游若错误相信 orientation，会改变融合行为 | 当前 ROS 消息匹配 bag 的 identity/default covariance 约定；建图仍应使用角速度/加速度，不把 identity 当融合姿态 |
 | `/slam/lidar_pose` 为 map 下 LiDAR位姿；仿真 `/unitree_go2/odom` 为 odom 下 base真值 | 直接 remap 会把不同坐标系当成同一坐标系 | 仿真真值仅作 oracle 对照；正式导航必须等待 localizer输出 |
-| 导航最终命令 `/cmd_vel2`；仿真控制入口 `/unitree_go2/cmd_vel` | 规划器输出不会自动驱动仿真 | 桥已保留同字段 `/cmd_vel2` 订阅和限幅，但不属于当前建图验收；定位/导航闭环仍未验证 |
+| 导航最终命令 `/cmd_vel2`；仿真控制入口 `/unitree_go2/cmd_vel` | 规划器输出不会自动驱动仿真 | `/cmd_vel2` 到仿真控制的正式适配和导航运动闭环仍需单独验收；不影响仿真建图/定位已打通的结论 |
 | track2 注释说换算 LiDAR pose 到机器人 pose，但实现将 dx/dy/yaw offset 均设为0；Pose-to-TF 节点又直接把 pose 当成 `map -> body` | 当 pose 实际代表 LiDAR frame 时，planner 位姿和 body TF 语义可能不一致 | 必须用真实位姿定义/标定验证，在只允许修改仿真的前提下由仿真接口层给出明确 frame 语义与一次性转换 |
 | 旧仿真发布 depth=1 的 LiDAR publisher；真实 bag记录 depth=256 | 高负载或慢消费者时可能丢帧 | 当前两路 publisher 配置 depth=256，且本轮 mapping 已收到消息并产出结果；DDS History Depth 显示 UNKNOWN，实际队列深度与丢包数仍未从运行端点量化 |
 
@@ -448,16 +480,11 @@ FAST-LIVO2 以 LiDAR-IMU 紧耦合里程计为前端，当前 `mid360.yaml` 配�
 | D435图像和内参 | **仿真自身已验收，和视觉配置不一致** | RGB/depth真实渲染且参数自洽；当前 `img_en=0`，不是 lidar-only 阻塞项 |
 | FAST-LIVO2建图输入联动 | **局部端到端通过** | Foxy chroot FAST-LIVO2 实测处理仿真输入：约20k点→6,666点，LIO/SC-PGO发布输出并成功保存GlobalMap；证据见 `reports/mapping-link-run-20261109-173837/` |
 | occupancy 全路线地图覆盖 | **尚未验收** | mapping 在机器人走到路线中段后启动，本轮只有约1.2 m后续运动；需从出生点先启动mapping再跑完整巡航 |
-| localizer定位 | **尚未端到端验证** | 还没有加载仿真生成地图并验证`/initialpose -> /slam/lidar_pose` |
+| localizer 地图装载与仿真实时定位 | **已打通** | 用户确认当前仿真 + 建图/定位链路已运行通过；2026-11-10 的 PCD-only 装载错误为历史探针结果 |
+| FAST-LIVO2 建图 | **已打通** | 仿真 LiDAR/IMU 数据进入 Foxy FAST-LIVO2，输出地图用于定位；全场景覆盖范围应以各次实际运行记录为准 |
 | `/scan` 导航输入 | **尚未验证** | 仿真没有运行`livox_lidar_processor`并确认字段、frame、频率和高度过滤结果 |
 | NeuPAN导航 | **尚未验证** | 缺少真实`/slam/lidar_pose`、`/scan`和`/clicked_path`闭环 |
 | `/cmd_vel2`驱动仿真 | **尚未验证** | 当前桥只订阅`/unitree_go2/cmd_vel`，尚无正式适配器 |
 | 真实地图与仿真场景几何一致性 | **本阶段不适用** | 当前使用 `data/839873.usdz`、`data/839873_collision.usd` 和 occupancy 原位坐标；尚未将 FAST-LIVO2 地图结果与该场景做定位成功率比较 |
 
-**最终判断：仿真 LiDAR/IMU 到 FAST-LIVO2 的接口与局部建图联动已通过；实时吞吐和 occupancy 全路线覆盖仍未通过验收，三模块全链路也未完成。** 下一阶段的最小顺序应为：
-
-1. 优化 Isaac Sim 场景/渲染负载，提升 RTF，使墙钟传感器速率接近配置值；
-2. 从 occupancy 路线出生点先启动 FAST-LIVO2，再执行完整 route，验证位姿增量、关键帧覆盖和地图几何；
-3. 评估确认地图覆盖后再启动 localizer，验证初始位姿、`map -> body` TF 和 `/slam/lidar_pose`；
-4. 建图输入稳定后，再单独验证导航 processor 的 `/scan` 和指定路径 `/clicked_path`，跟随模式不在短期目标；
-5. 只有完成以上实测，才能把符合性矩阵中的“尚未验证”改为通过。
+**最终判断：** 仿真 + FAST-LIVO2 建图 + localizer 定位链路已打通。此结论不延伸到全路线覆盖、导航 processor/NeuPAN 画线导航或 `/cmd_vel2` 驱动仿真的闭环；这些项目仍按单独证据验收。2026-11-10 的 PCD-only 地图装载错误属于已被后续流程解决的历史问题，不应再作为当前定位状态。

@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 import numpy as np
 import torch
+from scipy.spatial.transform import Rotation
 from go2.sensor_profile import PROFILE
 from PIL import Image
 
@@ -30,6 +31,8 @@ class RobotDataManager:
         self.command_time = None
         self.latest = {}
         self.errors = {}
+        self.cruise = None
+        self.overlay_last_step = -10
 
     def check_cmd_vel(self):
         import go2.go2_ctrl as ctrl
@@ -51,10 +54,67 @@ class RobotDataManager:
         self.step_count += 1
         robot = self.env.unwrapped.scene['unitree_go2']
         rs = robot.data.root_state_w.detach().cpu().numpy()
+        root = rs[0]
+        orientation_xyzw = root[[4, 5, 6, 3]]
+        rotation = Rotation.from_quat(orientation_xyzw)
+        velocity_world = root[7:10]
+        angular_velocity_world = root[10:13]
+        velocity_body = rotation.inv().apply(velocity_world)
+        angular_velocity_body = rotation.inv().apply(angular_velocity_world)
         d = {'timestamp':time.time(), 'simulation_time':float(self.env.unwrapped.sim.current_time), 'frame':self.step_count, 'num_envs':len(rs),
-             'robots':rs.tolist(), 'odom':{'position':rs[0,:3].tolist(),
-             'orientation':rs[0,[4,5,6,3]].tolist(), 'frame_id':'odom',
+             'robots':rs.tolist(), 'odom':{'position':root[:3].tolist(),
+             'orientation':orientation_xyzw.tolist(),
+             'linear_velocity_world':velocity_world.tolist(),
+             'angular_velocity_world':angular_velocity_world.tolist(), 'frame_id':'odom',
              'child_frame_id':PROFILE['ros'].get('body_frame_id', 'body')}}
+        euler = rotation.as_euler('xyz')
+        d['robot_state'] = {
+            'position_m': root[:3].tolist(),
+            'orientation_xyzw': orientation_xyzw.tolist(),
+            'rpy_rad': euler.tolist(),
+            'rpy_deg': np.rad2deg(euler).tolist(),
+            'linear_velocity_world_m_s': velocity_world.tolist(),
+            'angular_velocity_world_rad_s': angular_velocity_world.tolist(),
+            'linear_velocity_body_m_s': velocity_body.tolist(),
+            'angular_velocity_body_rad_s': angular_velocity_body.tolist(),
+            'body_up_z': float(rotation.as_matrix()[2, 2]),
+        }
+        if getattr(self, 'cruise_path_data', None):
+            d['navigation_path'] = {
+                'frame_id': self.cruise_path_data.get('frame_id', 'scene'),
+                'loop': bool(self.cruise_path_data.get('loop', False)),
+                'poses': self.cruise_path_data.get('poses', []),
+            }
+        if self.cruise is not None:
+            d['cruise'] = {
+                'state': self.cruise.diagnostics.get('state', 'waiting'),
+                'waypoint_index': int(self.cruise.index),
+                'waypoint_count': len(self.cruise.waypoints),
+                'completed_loops': int(self.cruise.completed_loops),
+                'target_xy_m': self.cruise.waypoints[self.cruise.index][:2].tolist(),
+                'command_body_vx_vy_omega': self.cruise.command.astype(float).tolist(),
+                'finished': bool(self.cruise.finished),
+                'aborted': bool(self.cruise.aborted),
+                'abort_reason': self.cruise.abort_reason,
+                'diagnostics': self.cruise.diagnostics,
+            }
+        if (getattr(self, 'interior_scene', None) and getattr(self, 'cruise_path_data', None)
+                and self.step_count - self.overlay_last_step >= 10):
+            try:
+                from go2.occupancy_overlay import render_occupancy_overlay
+                render_occupancy_overlay(
+                    self.interior_scene.data_dir / 'occupancy.png', self.interior_scene.meta,
+                    self.cruise_path_data, DATA_DIR / 'occupancy_overlay.png',
+                    robot_pose=[root[0], root[1], float(rotation.as_euler('zyx')[0])],
+                    target_index=self.cruise.index if self.cruise is not None else None,
+                    current_index=((self.cruise.index - 1) % len(self.cruise.waypoints)
+                                   if self.cruise is not None else None),
+                )
+                self.overlay_last_step = self.step_count
+            except Exception as exc:
+                self.errors['occupancy_overlay'] = str(exc)
+            else:
+                self.errors.pop('occupancy_overlay', None)
         d['sensor_profile']=PROFILE
         if hasattr(self, 'interior_scene'):
             d['scene_sources'] = self.interior_scene.evidence

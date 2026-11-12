@@ -25,11 +25,17 @@ parser.add_argument("--os-keyboard", action="store_true")
 parser.add_argument("--cmd-test", action="store_true")
 parser.add_argument("--max-steps", type=int, default=0)
 parser.add_argument("--report-dir", default="reports/our-go2")
-parser.add_argument("--policy", choices=["rough", "flat"], default="rough")
+parser.add_argument("--policy", choices=["rough", "flat"], default="flat")
+parser.add_argument("--control-mode", choices=["keyboard", "cruise"], default="keyboard",
+                    help="Choose manual keyboard control or automatic occupancy-path cruise")
 parser.add_argument("--spawn-seed", type=int, default=None)
 parser.add_argument("--spawn-clearance", type=float, default=0.2)
 parser.add_argument("--data-dir", default="data")
 parser.add_argument("--path-file", default=None)
+parser.add_argument("--use-path-json", action="store_true",
+                    help="Use --path-file (or cfg path_file) exactly as provided instead of generated rectangle route")
+parser.add_argument("--spawn-path-file", default=None,
+                    help="Use only the first scene-frame pose for spawn, not cruise or path validation")
 parser.add_argument("--no-cruise", action="store_true")
 parser.add_argument("--cruise-start-file", default=None, help="Wait until this file exists before starting cruise")
 parser.add_argument("--cruise-trace", default=None, help="Write robot truth and waypoint progress as JSONL")
@@ -81,30 +87,43 @@ def run_simulator(cfg):
     if cfg.env_name == "interiorgs":
         if args_cli.policy != "flat" or cfg.num_envs != 1:
             raise ValueError("InteriorGS uses flat policy and one robot per scene")
-        path_file = args_cli.path_file or getattr(cfg, "path_file", None)
-        if path_file and Path(path_file).exists():
-            scene_path = json.loads(Path(path_file).read_text())
-            if scene_path.get("frame_id", "scene") != "scene":
-                raise ValueError("InteriorGS path_file must use frame_id=scene")
-            if not scene_path.get("poses"):
-                raise ValueError("InteriorGS path_file contains no poses")
-            first = scene_path["poses"][0]
-            spawn_xy = (float(first["x"]), float(first["y"]))
-            spawn_yaw = float(first.get("yaw", 0.0))
+        from env.interiorgs_scene import InteriorGSScene
+        path_file = None
+        if args_cli.use_path_json:
+            path_file = args_cli.path_file or getattr(cfg, "path_file", None)
+            if not path_file:
+                path_file = str(Path(args_cli.data_dir) / "path_occupancy.json")
+        if args_cli.spawn_path_file:
+            spawn_data = json.loads(Path(args_cli.spawn_path_file).read_text())
+            spawn_xy, spawn_yaw = InteriorGSScene.path_start_pose(spawn_data)
+            if args_cli.use_path_json:
+                raise ValueError("--spawn-path-file cannot be combined with --use-path-json")
+            path_file = None
         else:
             spawn_xy = spawn_yaw = None
-        from env.interiorgs_scene import InteriorGSScene
+        if path_file and Path(path_file).exists():
+            scene_path = json.loads(Path(path_file).read_text())
+            if args_cli.use_path_json:
+                if scene_path.get("frame_id", "scene") != "scene":
+                    raise ValueError(
+                        "JSON cruise path must use frame_id=scene; no verified map-to-scene transform is configured"
+                    )
+            else:
+                scene_path = InteriorGSScene.minimum_area_rectangle_path(scene_path)
+            spawn_xy, spawn_yaw = InteriorGSScene.path_start_pose(scene_path)
         interior_scene = InteriorGSScene(
             args_cli.data_dir, args_cli.spawn_seed, args_cli.spawn_clearance,
             spawn_xy=spawn_xy, spawn_yaw=spawn_yaw,
         )
-        if scene_path is None:
-            scene_path = InteriorGSScene.default_path(args_cli.data_dir, args_cli.spawn_clearance)
-            first = scene_path["poses"][0]
+        if scene_path is None and not args_cli.spawn_path_file:
+            if args_cli.use_path_json:
+                raise FileNotFoundError(f"Requested cruise path JSON does not exist: {path_file}")
+            full_scene_path = InteriorGSScene.default_path(args_cli.data_dir, args_cli.spawn_clearance)
+            scene_path = InteriorGSScene.minimum_area_rectangle_path(full_scene_path)
+            spawn_xy, spawn_yaw = InteriorGSScene.path_start_pose(scene_path)
             interior_scene = InteriorGSScene(
                 args_cli.data_dir, args_cli.spawn_seed, args_cli.spawn_clearance,
-                spawn_xy=(float(first["x"]), float(first["y"])),
-                spawn_yaw=float(first.get("yaw", 0.0)),
+                spawn_xy=spawn_xy, spawn_yaw=spawn_yaw,
             )
         if scene_path is not None:
             interior_scene.validate_path(scene_path)
@@ -174,12 +193,26 @@ def run_simulator(cfg):
         if dm is not None:
             dm.interior_scene = interior_scene
     cruise = None
-    if interior_scene and scene_path is not None and not args_cli.no_cruise:
+    if interior_scene and scene_path is not None and args_cli.control_mode == "cruise" and not args_cli.no_cruise:
         from go2.path_cruise import ScenePathCruise
         cruise = ScenePathCruise(scene_path, loop=bool(scene_path.get("loop", getattr(cfg, "path_loop", False))),
                                  clearance_check=interior_scene.center_clearance,
-                                 required_clearance=args_cli.spawn_clearance)
+                                 required_clearance=float(scene_path.get("planning", {}).get(
+                                     "minimum_clearance_m", args_cli.spawn_clearance)))
         print(f"[INFO] Scene path cruise: {cruise.path_file} ({len(cruise.waypoints)} waypoints)", flush=True)
+        from go2.occupancy_overlay import render_occupancy_overlay
+        from ros2.go2_ros2_bridge import DATA_DIR as BRIDGE_DATA_DIR
+        route_image = BRIDGE_DATA_DIR / f"cruise_route_{len(cruise.waypoints)}_waypoints.png"
+        render_occupancy_overlay(
+            interior_scene.data_dir / "occupancy.png", interior_scene.meta, scene_path, route_image,
+            robot_pose=[*cruise.start_xy, cruise.start_yaw], target_index=cruise.index,
+            current_index=(cruise.index - 1) % len(cruise.waypoints),
+            title=f"Cruise route | {len(cruise.waypoints)} waypoints | robot=start",
+        )
+        print(f"[INFO] Cruise route overlay: {route_image}", flush=True)
+    if dm is not None:
+        dm.cruise = cruise
+        dm.cruise_path_data = scene_path
     validator = None
     if args_cli.self_test or args_cli.cmd_test:
         from scripts.validate_runtime import RuntimeValidator
@@ -216,6 +249,40 @@ def run_simulator(cfg):
             # ROS2 data (optional)
             if ROS2_AVAILABLE and dm is not None:
                 dm.pub_ros2_data()
+
+            if step % max(1, round(1.0 / sim_step_dt)) == 0:
+                from scipy.spatial.transform import Rotation
+                state = env.unwrapped.scene["unitree_go2"].data.root_state_w[0].detach().cpu().numpy()
+                rotation = Rotation.from_quat(state[[4, 5, 6, 3]])
+                rpy = np.rad2deg(rotation.as_euler("xyz"))
+                velocity_body = rotation.inv().apply(state[7:10])
+                angular_velocity_body = rotation.inv().apply(state[10:13])
+                status = (
+                    f"[ROBOT] t={float(env.unwrapped.sim.current_time):7.2f}s "
+                    f"pos=({state[0]:+.2f},{state[1]:+.2f},{state[2]:+.2f})m "
+                    f"rpy=({rpy[0]:+.1f},{rpy[1]:+.1f},{rpy[2]:+.1f})deg "
+                    f"v_world=({state[7]:+.2f},{state[8]:+.2f},{state[9]:+.2f})m/s "
+                    f"v_body=({velocity_body[0]:+.2f},{velocity_body[1]:+.2f},{velocity_body[2]:+.2f})m/s "
+                    f"w_body=({angular_velocity_body[0]:+.2f},{angular_velocity_body[1]:+.2f},{angular_velocity_body[2]:+.2f})rad/s "
+                    f"up_z={rotation.as_matrix()[2, 2]:.2f}"
+                )
+                if cruise is not None:
+                    diag = cruise.diagnostics
+                    target = cruise.waypoints[cruise.index]
+                    distance = float(np.linalg.norm(target[:2] - state[:2]))
+                    status += (
+                        f" cruise={diag.get('state', 'waiting')} wp={cruise.index+1}/{len(cruise.waypoints)} "
+                        f"target=({target[0]:.2f},{target[1]:.2f})m dist={distance:.2f}m "
+                        f"path_err={diag.get('path_error_m', float('nan')):.2f}m "
+                        f"yaw_err={diag.get('yaw_error_rad', float('nan')):+.2f}rad "
+                        f"clearance={diag.get('clearance_m', float('nan')):.2f}m "
+                        f"cmd=({cruise.command[0]:+.2f},{cruise.command[1]:+.2f},{cruise.command[2]:+.2f})"
+                    )
+                    if cruise.aborted:
+                        status += f" ABORT={cruise.abort_reason}"
+                    elif cruise.finished:
+                        status += " FINISHED"
+                print(status, flush=True)
 
             if validator:
                 validator.after_step(step + 1000 if args_cli.cmd_test else step)
